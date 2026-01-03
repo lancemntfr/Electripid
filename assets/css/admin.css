@@ -1,0 +1,47 @@
+/* Background */
+body {
+    background: linear-gradient(135deg, #dbeafe, #f0f9ff);
+}
+
+/* Glass effect */
+.glass {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Sticky navbar spacing */
+.glass-navbar {
+    position: sticky;
+    top: 15px;
+    z-index: 1000;
+}
+
+/* Additional dashboard styles */
+.glass-navbar nav {
+    padding: 0.75rem 1.5rem;
+}
+
+.glass-shadow {
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+}
+
+.table-responsive {
+    border-radius: 0 0 18px 18px;
+}
+
+.table thead th {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.table tbody tr:hover {
+    background-color: rgba(219, 234, 254, 0.3);
+}
+
+.badge {
+    padding: 0.35em 0.65em;
+    font-weight: 500;
+}
