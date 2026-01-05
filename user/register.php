@@ -49,13 +49,13 @@
                 $barangay = mysqli_real_escape_string($conn, $barangay);
                 $provider_id = mysqli_real_escape_string($conn, $provider_id);
                 
-                $insert_user_query = "INSERT INTO USER (fname, lname, email, password, role, acc_status) VALUES ('$fname', '$lname', '$email', '$hashed_password', 'user', 'active')";
+                $insert_user_query = "INSERT INTO USER (fname, lname, email, cp_number, city, barangay, password, role, acc_status) VALUES ('$fname', '$lname', '$email', '$cp_number', '$city', '$barangay', '$hashed_password', 'user', 'active')";
                 $user_result = executeQuery($insert_user_query);
                 
                 if ($user_result) {
                     $user_id = mysqli_insert_id($conn);
                     
-                    $insert_household_query = "INSERT INTO HOUSEHOLD (user_id, provider_id, city, barangay) VALUES ('$user_id', '$provider_id', '$city', '$barangay')";
+                    $insert_household_query = "INSERT INTO HOUSEHOLD (user_id, provider_id) VALUES ('$user_id', '$provider_id')";
                     $household_result = executeQuery($insert_household_query);
                     
                     if ($household_result) {
