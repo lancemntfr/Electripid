@@ -1,11 +1,16 @@
 <?php
-  session_start();
-  require_once '../connect.php';
+session_start();
+require_once '../connect.php';
 
-  if (!isset($_SESSION['user_id'])) {
-      header('Location: login.php');
-      exit;
-  }
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit;
+}
+
+// Define user variables
+$username = htmlspecialchars($_SESSION['username'] ?? 'User');
+$userInitial = isset($_SESSION['username']) ? strtoupper(substr($_SESSION['username'], 0, 1)) : 'U';
+$email = htmlspecialchars($_SESSION['email'] ?? 'user@example.com');
 ?>
 
 <!DOCTYPE html>
@@ -20,78 +25,88 @@
 </head>
 <body class="dashboard-page">
   
-  <div class="header position-fixed top-0 start-0 end-0 d-flex justify-content-between align-items-center px-4 py-3" style="z-index: 1000;">
-    <div class="logo-container d-flex align-items-center gap-3">
-      <div class="logo-icon rounded-circle bg-white d-flex align-items-center justify-content-center">⚡</div>
-      <div class="logo-text text-white fs-4 fw-semibold">Electri<span class="accent">pid</span></div>
-    </div>
-    <div class="header-actions d-flex gap-3 align-items-center">
-      <span class="text-white me-2">
-        <i class="bi bi-person-circle me-1"></i>
-      </span>
-      <button class="icon-btn rounded-circle border-0 d-flex align-items-center justify-content-center text-white" onclick="window.location.href='logout.php'">
-        <i class="bi bi-box-arrow-right"></i>
-      </button>
-      <button class="icon-btn rounded-circle border-0 d-flex align-items-center justify-content-center text-white"><i class="bi bi-bell"></i></button>
-    </div>
-  </div>
+  <!-- Glassmorphism Navbar -->
+<nav class="glass-navbar navbar navbar-expand-lg">
+    <div class="container-fluid d-flex align-items-center justify-content-between">
+        <!-- Logo Section -->
+        <div class="logo-container d-flex align-items-center">
+            <div class="logo-icon rounded-3 d-flex align-items-center justify-content-center me-3">
+                <i class="bi bi-lightning-charge"></i>
+            </div>
+            <div class="logo-text fs-4 fw-bold">Electri<span class="accent">pid</span></div>
+        </div>
 
-  <div class="main-content container-fluid px-4 py-5" style="max-width: 1200px; margin: 0 auto; padding-top: 100px;">
+        <!-- Right Section: User & Actions -->
+        <div class="header-actions d-flex align-items-center">
+            <!-- Notification with Badge -->
+            <div class="position-relative">
+                <button class="icon-btn d-flex align-items-center justify-content-center">
+                    <i class="bi bi-bell"></i>
+                </button>
+                <span class="notification-badge">3</span>
+            </div>
+            
+            <!-- User Avatar with Dropdown -->
+            <div class="user-avatar position-relative">
+                <?php echo $userInitial; ?>
+                <div class="user-dropdown">
+                    <div class="dropdown-header">
+                        <div class="user-name"><?php echo $username; ?></div>
+                        <div class="user-email"><?php echo $email; ?></div>
+                    </div>
+                    <div class="dropdown-menu">
+                        <a class="dropdown-item" href="#">
+                            <i class="bi bi-person me-2"></i>Profile
+                        </a>
+                        <a class="dropdown-item" href="#">
+                            <i class="bi bi-shield me-2"></i>Security
+                        </a>
+                        <a class="dropdown-item" href="#">
+                            <i class="bi bi-gear me-2"></i>Settings
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item logout-item" href="logout.php">
+                            <i class="bi bi-box-arrow-right me-2"></i>Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Standalone Logout Button -->
+            <a href="logout.php" class="logout-btn">
+                <i class="bi bi-box-arrow-right"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </div>
+</nav>
 
-    <div class="weather-widget bg-white mt-5 p-4 mb-4 d-flex flex-column flex-md-row justify-content-between align-items-center">
+  <div class="main-content container-fluid px-4 py-5" style="max-width: 1200px; margin: 0 auto; padding-top: 40px;">
+
+    <!-- Updated Weather Widget -->
+    <div class="weather-widget bg-white p-4 mb-4 d-flex flex-column flex-md-row justify-content-between align-items-center">
       <div class="weather-current d-flex align-items-center gap-4 mb-3 mb-md-0">
-        <div class="weather-icon" id="weatherIcon">☁️</div>
+        <div class="weather-icon" id="weatherIcon">
+          <img src="" alt="Weather Icon">
+        </div>
         <div>
-          <div class="weather-location small text-secondary text-uppercase" id="weatherLocation">
-            BATANGAS CITY
-          </div>
-          <div class="weather-temp fw-bold" id="weatherTemp">27°C</div>
+          <div class="weather-location small text-secondary text-uppercase" id="weatherLocation">BATANGAS CITY</div>
+          <div class="weather-temp fw-bold" id="weatherTemp">--°C</div>
           <div class="weather-info d-flex gap-4 small text-secondary">
-            <span id="weatherCondition">Overcast</span>
-            <span>💧 <span id="weatherHumidity">87</span>%</span>
-            <span>💨 <span id="weatherWind">19</span> km/h</span>
+            <span id="weatherCondition">--</span>
+            <span>💧 <span id="weatherHumidity">--</span>%</span>
+            <span>💨 <span id="weatherWind">--</span> km/h</span>
           </div>
         </div>
       </div>
+
+      <!-- Forecast Container -->
       <div class="weather-forecast d-flex gap-3" id="weatherForecast">
-        <div class="forecast-day text-center small">
-          <div class="forecast-day-name text-secondary mb-2">Sat</div>
-          <div class="forecast-icon fs-4 my-2">🌧️</div>
-          <div class="forecast-temp fw-semibold">28°</div>
-        </div>
-        <div class="forecast-day text-center small">
-          <div class="forecast-day-name text-secondary mb-2">Sun</div>
-          <div class="forecast-icon fs-4 my-2">☁️</div>
-          <div class="forecast-temp fw-semibold">29°</div>
-        </div>
-        <div class="forecast-day text-center small">
-          <div class="forecast-day-name text-secondary mb-2">Mon</div>
-          <div class="forecast-icon fs-4 my-2">☁️</div>
-          <div class="forecast-temp fw-semibold">28°</div>
-        </div>
-        <div class="forecast-day text-center small">
-          <div class="forecast-day-name text-secondary mb-2">Tue</div>
-          <div class="forecast-icon fs-4 my-2">☁️</div>
-          <div class="forecast-temp fw-semibold">29°</div>
-        </div>
-        <div class="forecast-day text-center small">
-          <div class="forecast-day-name text-secondary mb-2">Wed</div>
-          <div class="forecast-icon fs-4 my-2">☁️</div>
-          <div class="forecast-temp fw-semibold">29°</div>
-        </div>
-        <div class="forecast-day text-center small">
-          <div class="forecast-day-name text-secondary mb-2">Thu</div>
-          <div class="forecast-icon fs-4 my-2">☁️</div>
-          <div class="forecast-temp fw-semibold">29°</div>
-        </div>
-        <div class="forecast-day text-center small">
-          <div class="forecast-day-name text-secondary mb-2">Fri</div>
-          <div class="forecast-icon fs-4 my-2">☁️</div>
-          <div class="forecast-temp fw-semibold">29°</div>
-        </div>
+        <!-- JS will inject forecast here -->
       </div>
     </div>
 
+    <!-- Rest of your content remains exactly the same -->
     <div class="card bg-white p-4 mb-4">
       <div class="section-header d-flex align-items-center gap-3 mb-4">
         <div class="section-icon light rounded-circle d-flex align-items-center justify-content-center">
@@ -378,6 +393,7 @@
 
   </div>
 
+  <!-- Modal and chatbot code remains exactly the same -->
   <div id="donationModal" class="modal-overlay position-fixed top-0 start-0 end-0 bottom-0 align-items-center justify-content-center" style="display: none; z-index: 1001;">
     <div class="modal-content bg-white rounded-4" style="width: 90%; max-width: 500px;">
       <div class="modal-header d-flex justify-content-between align-items-center p-4 border-bottom">
@@ -469,8 +485,8 @@
     let appliances = [];
     let currentRate = 12.00;
     let forecastChart = null;
-    const WEATHER_API_KEY = 'YOUR_OPENWEATHER_API_KEY';
-    let currentLocation = 'Batangas City';
+    const WEATHER_API_KEY = 'a4ad5de980d109abed0fec591eefd391'; // Updated API key
+    let currentLocation = 'Batangas';
     let userId = 1;
 
     const providerByLocation = {
@@ -484,7 +500,7 @@
       updateRateDisplay();
       updateAllMetrics();
       initForecastChart();
-      fetchWeatherData();
+      fetchWeather(); // Use the new weather function
       
       document.getElementById('rateInput').addEventListener('input', function() {
         currentRate = parseFloat(this.value) || 12;
@@ -510,10 +526,70 @@
 
         updateRateDisplay();
         updateAllMetrics();
-        fetchWeatherData();
+        fetchWeather(); // Use the new weather function
         saveSettings();
       });
     });
+
+    // New weather functions from your updated code
+    async function fetchWeather() {
+      try {
+        const res = await fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${currentLocation}&appid=${WEATHER_API_KEY}&units=metric`);
+        const data = await res.json();
+        if (data.cod === '200') {
+          updateCurrentWeather(data);
+          updateWeatherForecast(data);
+          document.getElementById('weatherAlert').style.display = 'none';
+        } else {
+          throw new Error('Weather data unavailable');
+        }
+      } catch (error) {
+        console.error('Error fetching weather:', error);
+        document.getElementById('weatherAlert').style.display = 'flex';
+      }
+    }
+
+    function updateCurrentWeather(data) {
+      const current = data.list[0]; // first item = current weather
+      document.getElementById('weatherTemp').textContent = Math.round(current.main.temp) + '°C';
+      document.getElementById('weatherCondition').textContent = current.weather[0].description;
+      document.getElementById('weatherHumidity').textContent = current.main.humidity;
+      document.getElementById('weatherWind').textContent = current.wind.speed;
+
+      const iconCode = current.weather[0].icon;
+      document.querySelector('#weatherIcon img').src = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+    }
+
+    function updateWeatherForecast(data) {
+      const forecastContainer = document.getElementById('weatherForecast');
+      forecastContainer.innerHTML = '';
+
+      // OpenWeatherMap returns 3-hour intervals. We'll pick 12:00 for daily forecast
+      const forecastByDay = {};
+      data.list.forEach(item => {
+        const date = new Date(item.dt_txt);
+        const day = date.toLocaleDateString('en-US', { weekday: 'short' });
+        const hour = date.getHours();
+        if(hour === 12 && !forecastByDay[day]){
+          forecastByDay[day] = item;
+        }
+      });
+
+      Object.keys(forecastByDay).forEach(day => {
+        const item = forecastByDay[day];
+        const iconCode = item.weather[0].icon;
+        const temp = Math.round(item.main.temp);
+
+        const dayDiv = document.createElement('div');
+        dayDiv.classList.add('forecast-day');
+        dayDiv.innerHTML = `
+          <div class="fw-bold">${day}</div>
+          <img src="https://openweathermap.org/img/wn/${iconCode}@2x.png" alt="icon">
+          <div>${temp}°C</div>
+        `;
+        forecastContainer.appendChild(dayDiv);
+      });
+    }
 
     async function saveSettings() {
       const location = document.getElementById('locationSelect').value;
@@ -542,94 +618,6 @@
       } catch(error) {
         console.error('Error saving settings:', error);
       }
-    }
-
-    async function fetchWeatherData() {
-      try {
-        const currentResponse = await fetch(
-          `https://api.openweathermap.org/data/2.5/weather?q=${currentLocation},PH&appid=${WEATHER_API_KEY}&units=metric`
-        );
-        const currentData = await currentResponse.json();
-        
-        if (currentData.cod === 200) {
-          updateCurrentWeather(currentData);
-          document.getElementById('weatherAlert').style.display = 'none';
-        } else {
-          throw new Error('Weather data unavailable');
-        }
-
-        const forecastResponse = await fetch(
-          `https://api.openweathermap.org/data/2.5/forecast?q=${currentLocation},PH&appid=${WEATHER_API_KEY}&units=metric`
-        );
-        const forecastData = await forecastResponse.json();
-        
-        if (forecastData.cod === '200') {
-          updateWeatherForecast(forecastData);
-        }
-      } catch (error) {
-        console.error('Weather fetch error:', error);
-        document.getElementById('weatherAlert').style.display = 'flex';
-      }
-    }
-
-    function updateCurrentWeather(data) {
-      const temp = Math.round(data.main.temp);
-      const condition = data.weather[0].main;
-      const humidity = data.main.humidity;
-      const windSpeed = Math.round(data.wind.speed * 3.6); // Convert m/s to km/h
-      
-      document.getElementById('weatherTemp').textContent = `${temp}°C`;
-      document.getElementById('weatherCondition').textContent = condition;
-      document.getElementById('weatherHumidity').textContent = humidity;
-      document.getElementById('weatherWind').textContent = windSpeed;
-      document.getElementById('weatherLocation').textContent = currentLocation.toUpperCase();
-      
-      const iconMap = {
-        'Clear': '☀️',
-        'Clouds': '☁️',
-        'Rain': '🌧️',
-        'Drizzle': '🌦️',
-        'Thunderstorm': '⛈️',
-        'Snow': '❄️',
-        'Mist': '🌫️',
-        'Fog': '🌫️'
-      };
-      document.getElementById('weatherIcon').textContent = iconMap[condition] || '☁️';
-    }
-
-    function updateWeatherForecast(data) {
-      const forecastContainer = document.getElementById('weatherForecast');
-      const dailyData = {};
-      
-      data.list.forEach(item => {
-        const date = new Date(item.dt * 1000);
-        const day = date.toLocaleDateString('en-US', { weekday: 'short' });
-        
-        if (!dailyData[day]) {
-          dailyData[day] = {
-            temp: item.main.temp,
-            condition: item.weather[0].main
-          };
-        }
-      });
-      
-      const days = Object.keys(dailyData).slice(0, 7);
-      const iconMap = {
-        'Clear': '☀️',
-        'Clouds': '☁️',
-        'Rain': '🌧️',
-        'Drizzle': '🌦️',
-        'Thunderstorm': '⛈️',
-        'Snow': '❄️'
-      };
-      
-      forecastContainer.innerHTML = days.map(day => `
-        <div class="forecast-day text-center small">
-          <div class="forecast-day-name text-secondary mb-2">${day}</div>
-          <div class="forecast-icon fs-4 my-2">${iconMap[dailyData[day].condition] || '☁️'}</div>
-          <div class="forecast-temp fw-semibold">${Math.round(dailyData[day].temp)}°</div>
-        </div>
-      `).join('');
     }
 
     function openDonationModal() {
@@ -904,6 +892,7 @@
       forecastChart.update();
     }
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 </body>

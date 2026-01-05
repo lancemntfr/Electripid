@@ -36,23 +36,20 @@
     <section id="home" class="hero-section py-5">
         <div class="container">
             <div class="row align-items-center">
-                <div class="col-lg-6">
+                <div class="col-6">
                     <h1 class="display-4 fw-bold text-primary mb-4">Smart Energy Management for a Sustainable Future</h1>
                     <p class="fs-5 text-secondary mb-4" style="max-width: 600px;">
                         Track your electricity consumption, get personalized recommendations, 
                         and contribute to a greener planet with Electripid.
                     </p>
                     <div class="d-flex gap-3">
-                        <a href="user/register.php" class="btn btn-hero">
+                        <a href="user/register.php" class="btn btn-hero text-white">
                             <i class="bi bi-rocket-takeoff me-2"></i> Get Started Free
                         </a>
                         <a href="#features" class="btn btn-outline-primary">
                             <i class="bi bi-info-circle me-2"></i> Learn More
                         </a>
                     </div>
-                </div>
-                <div class="col-lg-6">
-                    <img src="https://cdn.pixabay.com/photo/2017/08/06/22/01/light-bulb-2598784_1280.jpg" alt="Energy Efficiency" class="img-fluid rounded-3 shadow-lg">
                 </div>
             </div>
         </div>
@@ -70,7 +67,6 @@
                             </div>
                             <h4>Real-time Monitoring</h4>
                             <p>Track your electricity usage in real-time with detailed analytics and visual reports.</p>
-                            <a href="user/register.php" class="btn btn-sm btn-outline-primary mt-2">Try it now</a>
                         </div>
                     </div>
                 </div>
@@ -82,7 +78,6 @@
                             </div>
                             <h4>AI-Powered Chatbot</h4>
                             <p>Get instant answers to your energy questions with our intelligent chatbot assistant.</p>
-                            <a href="user/register.php" class="btn btn-sm btn-outline-primary mt-2">Try it now</a>
                         </div>
                     </div>
                 </div>
@@ -94,7 +89,6 @@
                             </div>
                             <h4>Smart Recommendations</h4>
                             <p>Receive personalized tips to reduce your energy consumption and save money.</p>
-                            <a href="user/register.php" class="btn btn-sm btn-outline-primary mt-2">Try it now</a>
                         </div>
                     </div>
                 </div>
@@ -106,7 +100,6 @@
                             </div>
                             <h4>Smart Reminders</h4>
                             <p>Set reminders for appliance maintenance and energy-saving opportunities.</p>
-                            <a href="user/register.php" class="btn btn-sm btn-outline-primary mt-2">Try it now</a>
                         </div>
                     </div>
                 </div>
@@ -118,7 +111,6 @@
                             </div>
                             <h4>Weather Alerts</h4>
                             <p>Get alerts about weather conditions that affect your energy consumption.</p>
-                            <a href="user/register.php" class="btn btn-sm btn-outline-primary mt-2">Try it now</a>
                         </div>
                     </div>
                 </div>
@@ -130,7 +122,6 @@
                             </div>
                             <h4>Green Donations</h4>
                             <p>Contribute to environmental causes and support renewable energy projects.</p>
-                            <a href="user/register.php" class="btn btn-sm btn-outline-primary mt-2">Try it now</a>
                         </div>
                     </div>
                 </div>
@@ -170,7 +161,6 @@
                         <div class="step-number rounded-circle d-flex align-items-center justify-content-center mx-auto mb-4 text-white fw-bold fs-5">1</div>
                         <h4>Sign Up</h4>
                         <p>Create your free account in less than 2 minutes.</p>
-                        <a href="user/register.php" class="btn btn-sm btn-primary">Sign Up Now</a>
                     </div>
                 </div>
                 <div class="col-md-4">
@@ -188,23 +178,6 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
-
-    <section class="cta-section py-5 text-center">
-        <div class="container">
-            <h2 class="fw-bold text-primary mb-4 position-relative section-title">
-                Ready to Save Energy?
-            </h2>
-            <p class="fs-5 mb-4">
-                Join thousands of users who are already saving energy and money with Electripid.
-            </p>
-            <a href="user/register.php" class="btn btn-hero btn-lg">
-                <i class="bi bi-rocket-takeoff me-2"></i> Start Your Free Trial
-            </a>
-            <p class="text-muted mt-3">
-                Already have an account? <a href="user/login.php" class="text-decoration-none">Login here</a>
-            </p>
         </div>
     </section>
 
@@ -242,7 +215,7 @@
                 </div>
             </div>
             <div class="border-top border-white border-opacity-25 pt-4 mt-5 text-center">
-                <p class="text-white-50 mb-0">&copy;s 2024 Electripid. All rights reserved.</p>
+                <p class="text-white-50 mb-0">&copy; 2024 Electripid. All rights reserved.</p>
             </div>
         </div>
     </footer>
