@@ -5,8 +5,13 @@ require_once '../connect.php';
 $error_message = '';
 $success_message = '';
 
+// Check if already logged in and redirect based on role
 if (isset($_SESSION['user_id'])) {
-    header('Location: dashboard.php');
+    if ($_SESSION['role'] === 'admin') {
+        header('Location: ../admin/dashboard.php');
+    } else {
+        header('Location: dashboard.php');
+    }
     exit;
 }
 
@@ -39,7 +44,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         setcookie('remember_token', base64_encode($user['user_id'] . ':' . hash('sha256', $user['password'])), time() + (30 * 24 * 60 * 60), '/');
                     }
                     
-                    header('Location: dashboard.php');
+                    // Redirect based on role
+                    if ($user['role'] === 'admin') {
+                        header('Location: ../admin/dashboard.php');
+                    } else {
+                        header('Location: dashboard.php');
+                    }
                     exit;
                 } else {
                     $error_message = 'Invalid email or password.';
@@ -51,6 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Remember me functionality with role-based redirect
 if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
     $token_data = base64_decode($_COOKIE['remember_token']);
     $parts = explode(':', $token_data);
@@ -73,7 +84,12 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
                 $_SESSION['email'] = $user['email'];
                 $_SESSION['role'] = $user['role'];
                 
-                header('Location: dashboard.php');
+                // Redirect based on role
+                if ($user['role'] === 'admin') {
+                    header('Location: ../admin/dashboard.php');
+                } else {
+                    header('Location: dashboard.php');
+                }
                 exit;
             }
         }
@@ -114,7 +130,7 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
             </div>
         <?php endif; ?>
 
-        <!-- USER LOGIN FORM -->
+        <!-- LOGIN FORM (for both user and admin) -->
         <form method="POST" action="" id="loginForm">
             <div class="mb-3">
                 <label class="form-label">Email Address</label>
@@ -142,13 +158,6 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
                 <i class="bi bi-box-arrow-in-right me-2"></i> Sign In
             </button>
         </form>
-
-        <!-- ADMIN LOGIN BUTTON -->
-        <div class="text-center mb-3">
-            <a href="../admin/login.php" class="btn btn-dark w-100 py-2">
-                <i class="bi bi-shield-lock-fill me-2"></i> Admin Login
-            </a>
-        </div>
 
         <div class="text-center mt-3">
             <p class="mb-2">Don't have an account? 

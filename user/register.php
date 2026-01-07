@@ -14,7 +14,7 @@
         $fname = trim($_POST['first_name'] ?? '');
         $lname = trim($_POST['last_name'] ?? '');
         $email = trim($_POST['email'] ?? '');
-        $cp_number = trim($_POST['cp_number'] ?? '');
+        $cp_number = '';
         $city = trim($_POST['city'] ?? '');
         $barangay = trim($_POST['barangay'] ?? '');
         $provider_id = intval($_POST['provider_id'] ?? 0);
@@ -46,7 +46,6 @@
                 
                 $fname = mysqli_real_escape_string($conn, $fname);
                 $lname = mysqli_real_escape_string($conn, $lname);
-                $cp_number = mysqli_real_escape_string($conn, $cp_number);
                 $city = mysqli_real_escape_string($conn, $city);
                 $barangay = mysqli_real_escape_string($conn, $barangay);
                 $provider_id = mysqli_real_escape_string($conn, $provider_id);
@@ -92,52 +91,50 @@
     <link rel="stylesheet" href="../assets/css/user.css">
     <style>
         body {
-            overflow: hidden;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
         }
         .auth-card {
-            max-height: 100vh;
-            overflow-y: auto;
+            max-width: 900px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 10px;
         }
-        .compact-form .mb-3,
-        .compact-form .mb-4 {
-            margin-bottom: 0.75rem !important;
-        }
-        .compact-form label {
+        .form-label {
+            font-size: 0.85rem;
             margin-bottom: 0.25rem;
-            font-size: 0.9rem;
+            font-weight: 500;
         }
-        .compact-form .form-control,
-        .compact-form .form-select {
+        .form-control, .form-select {
             padding: 0.4rem 0.75rem;
             font-size: 0.9rem;
         }
-        .compact-form .small {
-            font-size: 0.75rem;
-        }
-        .compact-header h2 {
-            font-size: 1.5rem;
-            margin-bottom: 0.25rem;
-        }
-        .compact-header p {
-            font-size: 0.85rem;
-            margin-bottom: 0.75rem;
+        .mb-compact {
+            margin-bottom: 0.75rem !important;
         }
         .logo-icon {
-            width: 50px;
-            height: 50px;
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem !important;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .eye-toggle {
+            cursor: pointer;
+        }
+        .eye-toggle:hover {
+            color: #667eea !important;
         }
     </style>
 </head>
-<body class="min-vh-100 d-flex align-items-center justify-content-center p-3">
-    <div class="auth-card bg-white p-4 w-100" style="max-width: 1200px;">
-        <div class="text-center mb-3 compact-header">
-            <div class="logo-icon rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2 text-white">⚡</div>
-            <h2 class="text-primary">Create Your Account</h2>
-            <p class="text-muted">Join Electripid and start saving energy today!</p>
+<body>
+    <div class="auth-card bg-white p-4 w-100">
+        <!-- Header -->
+        <div class="text-center mb-3">
+            <div class="logo-icon rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2 text-white" style="width: 50px; height: 50px; font-size: 1.5rem;">⚡</div>
+            <h3 class="text-primary mb-1">Create Your Account</h3>
+            <p class="text-muted small mb-0">Join Electripid and start saving energy today!</p>
         </div>
         
+        <!-- Alert Messages -->
         <?php if (!empty($error_message)): ?>
             <div class="alert alert-danger alert-dismissible fade show py-2" role="alert">
                 <i class="bi bi-exclamation-triangle-fill me-2"></i><?php echo $error_message; ?>
@@ -152,51 +149,52 @@
             </div>
         <?php endif; ?>
         
-        <form method="POST" action="" id="registerForm" class="compact-form">
+        <!-- Registration Form -->
+        <form method="POST" action="" id="registerForm">
             <input type="hidden" name="register" value="1">
             
-            <div class="row g-3">
+            <!-- Two Column Layout -->
+            <div class="row">
                 <!-- Left Column -->
                 <div class="col-md-6">
-                    <div class="row g-3">
+                    <!-- Name Fields -->
+                    <div class="row g-2 mb-compact">
                         <div class="col-6">
-                            <label class="form-label">First Name</label>
+                            <label class="form-label">First Name <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="first_name" required placeholder="First name" autocomplete="given-name" value="<?php echo isset($_POST['first_name']) ? htmlspecialchars($_POST['first_name']) : ''; ?>">
                         </div>
                         <div class="col-6">
-                            <label class="form-label">Last Name</label>
+                            <label class="form-label">Last Name <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="last_name" required placeholder="Last name" autocomplete="family-name" value="<?php echo isset($_POST['last_name']) ? htmlspecialchars($_POST['last_name']) : ''; ?>">
                         </div>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Email Address</label>
+
+                    <!-- Email -->
+                    <div class="mb-compact">
+                        <label class="form-label">Email Address <span class="text-danger">*</span></label>
                         <input type="email" class="form-control" name="email" required placeholder="your@email.com" autocomplete="email" value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Phone Number</label>
-                        <input type="tel" class="form-control" name="cp_number" placeholder="09XX XXX XXXX" autocomplete="tel" value="<?php echo isset($_POST['cp_number']) ? htmlspecialchars($_POST['cp_number']) : ''; ?>">
-                    </div>
-
-                    <div class="row g-3 mb-3">
+                    <!-- Location Fields -->
+                    <div class="row g-2 mb-compact">
                         <div class="col-6">
-                            <label class="form-label">City / Municipality</label>
-                            <select class="form-select" id="city" name="city">
+                            <label class="form-label">City <span class="text-danger">*</span></label>
+                            <select class="form-select" id="city" name="city" required>
                                 <option value="">Select city</option>
                             </select>
                         </div>
                         <div class="col-6">
-                            <label class="form-label">Barangay</label>
-                            <select class="form-select" id="barangay" name="barangay" disabled>
+                            <label class="form-label">Barangay <span class="text-danger">*</span></label>
+                            <select class="form-select" id="barangay" name="barangay" disabled required>
                                 <option value="">Select barangay</option>
                             </select>
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Electricity Provider</label>
-                        <select class="form-select" name="provider_id">
+                    <!-- Electricity Provider -->
+                    <div class="mb-compact">
+                        <label class="form-label">Electricity Provider <span class="text-danger">*</span></label>
+                        <select class="form-select" name="provider_id" required>
                             <option value="">Select your provider</option>
                             <option value="1" <?php echo (isset($_POST['provider_id']) && $_POST['provider_id'] == '1') ? 'selected' : ''; ?>>Meralco</option>
                             <option value="2" <?php echo (isset($_POST['provider_id']) && $_POST['provider_id'] == '2') ? 'selected' : ''; ?>>Batelec I</option>
@@ -207,62 +205,66 @@
 
                 <!-- Right Column -->
                 <div class="col-md-6">
-                    <div class="mb-3 password-input-group">
-                        <label class="form-label">Password</label>
+                    <!-- Password -->
+                    <div class="mb-compact">
+                        <label class="form-label">Password <span class="text-danger">*</span></label>
                         <div class="position-relative">
                             <input type="password" class="form-control" name="password" 
                                    id="password" required minlength="6"
-                                   placeholder="Create a strong password"
+                                   placeholder="Create password"
                                    onkeyup="checkPasswordStrength()"
                                    autocomplete="new-password">
-                            <button type="button" class="eye-toggle position-absolute text-secondary z-3 border-0 bg-transparent p-1" id="togglePassword" style="width: 30px; height: 30px;">
+                            <button type="button" class="eye-toggle position-absolute text-secondary z-3 border-0 bg-transparent" id="togglePassword" style="right: 10px; top: 50%; transform: translateY(-50%);">
                                 <i class="bi bi-eye"></i>
                             </button>
                         </div>
-                        <div class="password-strength mt-2" id="passwordStrength"></div>
-                        <div class="small text-secondary mt-2">
-                            <div id="lengthReq"><i class="bi bi-circle"></i> At least 6 characters</div>
-                            <div id="caseReq"><i class="bi bi-circle"></i> Mix of uppercase & lowercase</div>
-                            <div id="numberReq"><i class="bi bi-circle"></i> At least one number</div>
+                        <div class="small text-secondary mt-1" style="font-size: 0.75rem;">
+                            <div id="lengthReq"><i class="bi bi-circle"></i> 6+ characters</div>
+                            <div id="caseReq"><i class="bi bi-circle"></i> Upper & lowercase</div>
+                            <div id="numberReq"><i class="bi bi-circle"></i> One number</div>
                         </div>
                     </div>
                     
-                    <div class="mb-3 password-input-group">
-                        <label class="form-label">Confirm Password</label>
+                    <!-- Confirm Password -->
+                    <div class="mb-compact">
+                        <label class="form-label">Confirm Password <span class="text-danger">*</span></label>
                         <div class="position-relative">
                             <input type="password" class="form-control" name="confirm_password" 
                                    id="confirm_password" required
-                                   placeholder="Re-enter your password"
+                                   placeholder="Re-enter password"
                                    onkeyup="checkPasswordMatch()"
                                    autocomplete="new-password">
-                            <button type="button" class="eye-toggle position-absolute text-secondary z-3 border-0 bg-transparent p-1" id="toggleConfirmPassword" style="width: 30px; height: 30px;">
+                            <button type="button" class="eye-toggle position-absolute text-secondary z-3 border-0 bg-transparent" id="toggleConfirmPassword" style="right: 10px; top: 50%; transform: translateY(-50%);">
                                 <i class="bi bi-eye"></i>
                             </button>
                         </div>
-                        <div class="mt-2" id="passwordMatch"></div>
+                        <div class="mt-1" id="passwordMatch"></div>
                     </div>
-                    
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" id="terms" name="terms" required>
-                        <label class="form-check-label" for="terms">
-                            I agree to the <a href="#" class="text-decoration-none">Terms of Service</a> and <a href="#" class="text-decoration-none">Privacy Policy</a>
-                        </label>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary w-100 py-2 mb-2" id="registerBtn">
-                        <i class="bi bi-person-plus me-2"></i> Create Account
-                    </button>
-                    
-                    <div class="text-center">
-                        <p class="mb-1 small">Already have an account? 
-                            <a href="login.php" class="text-decoration-none">Sign in here</a>
-                        </p>
-                        <p class="mb-0 small">
-                            <a href="../index.php" class="text-decoration-none">
-                                <i class="bi bi-arrow-left me-1"></i> Back to Homepage
-                            </a>
-                        </p>
-                    </div>
+                </div>
+            </div>
+
+            <!-- Terms, Button, and Links - Centered -->
+            <div class="text-center mt-3">
+                <div class="form-check d-inline-block text-start mb-2">
+                    <input type="checkbox" class="form-check-input" id="terms" name="terms" required>
+                    <label class="form-check-label small" for="terms">
+                        I agree to the <a href="#" class="text-decoration-none">Terms of Service</a> and <a href="#" class="text-decoration-none">Privacy Policy</a>
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-75 py-2 mb-2" id="registerBtn">
+                    <i class="bi bi-person-plus me-2"></i> Create Account
+                </button>
+                
+                <div>
+                    <p class="mb-1 small">Already have an account? 
+                        <a href="login.php" class="text-decoration-none">Sign in here</a>
+                    </p>
+                    <p class="mb-0 small">
+                        <a href="../index.php" class="text-decoration-none">
+                            <i class="bi bi-arrow-left me-1"></i> Back to Homepage
+                        </a>
+                    </p>
                 </div>
             </div>
         </form>
@@ -336,7 +338,6 @@
 
         function checkPasswordStrength() {
             const password = document.getElementById('password').value;
-            const strengthBar = document.getElementById('passwordStrength');
             const lengthReq = document.getElementById('lengthReq');
             const caseReq = document.getElementById('caseReq');
             const numberReq = document.getElementById('numberReq');
@@ -344,22 +345,10 @@
             const hasLength = password.length >= 6;
             const hasCase = /([a-z].*[A-Z])|([A-Z].*[a-z])/.test(password);
             const hasNumber = /[0-9]/.test(password);
-            const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
             
-            const strength = [hasLength, hasCase, hasNumber, hasSpecial].filter(Boolean).length;
-            
-            lengthReq.innerHTML = `<i class="bi ${hasLength ? 'bi-check-circle text-success' : 'bi-x-circle text-danger'}"></i> At least 6 characters`;
-            caseReq.innerHTML = `<i class="bi ${hasCase ? 'bi-check-circle text-success' : 'bi-x-circle text-danger'}"></i> Mix of uppercase & lowercase`;
-            numberReq.innerHTML = `<i class="bi ${hasNumber ? 'bi-check-circle text-success' : 'bi-x-circle text-danger'}"></i> At least one number`;
-            
-            strengthBar.className = 'password-strength';
-            if (!password) {
-                strengthBar.style.width = '0%';
-                strengthBar.style.backgroundColor = '#e9ecef';
-            } else {
-                const strengthClasses = ['strength-weak', 'strength-fair', 'strength-good', 'strength-strong'];
-                strengthBar.classList.add(strengthClasses[Math.min(strength - 1, 3)] || 'strength-weak');
-            }
+            lengthReq.innerHTML = `<i class="bi ${hasLength ? 'bi-check-circle text-success' : 'bi-circle text-secondary'}"></i> 6+ characters`;
+            caseReq.innerHTML = `<i class="bi ${hasCase ? 'bi-check-circle text-success' : 'bi-circle text-secondary'}"></i> Upper & lowercase`;
+            numberReq.innerHTML = `<i class="bi ${hasNumber ? 'bi-check-circle text-success' : 'bi-circle text-secondary'}"></i> One number`;
         }
         
         function checkPasswordMatch() {
@@ -374,7 +363,7 @@
                 const icon = isMatch ? 'bi-check-circle' : 'bi-x-circle';
                 const color = isMatch ? 'text-success' : 'text-danger';
                 const text = isMatch ? 'Passwords match' : 'Passwords do not match';
-                matchDiv.innerHTML = `<span class="${color}"><i class="bi ${icon} me-1"></i> ${text}</span>`;
+                matchDiv.innerHTML = `<small class="${color}"><i class="bi ${icon} me-1"></i> ${text}</small>`;
             }
         }
         
