@@ -11,79 +11,131 @@ if (!isset($_SESSION['user_id'])) {
 $username = htmlspecialchars($_SESSION['username'] ?? 'User');
 $userInitial = isset($_SESSION['username']) ? strtoupper(substr($_SESSION['username'], 0, 1)) : 'U';
 $email = htmlspecialchars($_SESSION['email'] ?? 'user@example.com');
+$userId = $_SESSION['user_id'];
+
+// Load appliances from database
+$appliances = [];
+$user_id = mysqli_real_escape_string($conn, $userId);
+$household_query = "SELECT household_id FROM HOUSEHOLD WHERE user_id = '$user_id'";
+$household_result = executeQuery($household_query);
+
+if ($household_result && mysqli_num_rows($household_result) > 0) {
+    $household_row = mysqli_fetch_assoc($household_result);
+    $household_id = mysqli_real_escape_string($conn, $household_row['household_id']);
+    
+    $appliance_query = "SELECT * FROM APPLIANCE WHERE household_id = '$household_id'";
+    $appliance_result = executeQuery($appliance_query);
+    
+    if ($appliance_result) {
+        while ($row = mysqli_fetch_assoc($appliance_result)) {
+            $appliances[] = $row;
+        }
+    }
+}
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Electripid - Energy Monitoring Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Electripid - Dashboard</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
   <link rel="stylesheet" href="../assets/css/user.css">
 </head>
-<body class="dashboard-page">
-  
-  <!-- Glassmorphism Navbar -->
-<nav class="glass-navbar navbar navbar-expand-lg">
-    <div class="container-fluid d-flex align-items-center justify-content-between">
-        <!-- Logo Section -->
-        <div class="logo-container d-flex align-items-center">
-            <div class="logo-icon rounded-3 d-flex align-items-center justify-content-center me-3">
-                <i class="bi bi-lightning-charge"></i>
-            </div>
-            <div class="logo-text fs-4 fw-bold">Electri<span class="accent">pid</span></div>
+<body>
+  <!-- Navbar -->
+  <div class="container-fluid px-5 mt-4">
+    <nav class="navbar navbar-expand-lg navbar-light bg-white">
+      <div class="w-100 d-flex justify-content-between align-items-center">
+        <a class="navbar-brand ms-3" href="#">
+          <i class="bi bi-lightning-charge-fill me-2"></i>Electripid
+        </a>
+        <div class="d-flex align-items-center">
+          <!-- Notifications -->
+          <button class="nav-icon-btn position-relative" type="button">
+            <i class="bi bi-bell"></i>
+            <span class="notification-badge">3</span>
+          </button>
+          <!-- User Profile -->
+          <div class="dropdown ms-2">
+            <button class="btn p-0 d-flex align-items-center" type="button" data-bs-toggle="dropdown">
+              <div class="user-avatar me-2"><?php echo $userInitial; ?></div>
+              <i class="bi bi-chevron-down"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li>
+                <a class="dropdown-item" href="#">
+                  <i class="bi bi-person"></i> My Profile
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="#">
+                  <i class="bi bi-gear"></i> Settings
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="#">
+                  <i class="bi bi-question-circle"></i> Help & Support
+                </a>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <a class="dropdown-item text-danger" href="logout.php">
+                  <i class="bi bi-box-arrow-right"></i> Logout
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
+      </div>
+    </nav>
+  </div>
 
-        <!-- Right Section: User & Actions -->
-        <div class="header-actions d-flex align-items-center">
-            <!-- Notification with Badge -->
-            <div class="position-relative">
-                <button class="icon-btn d-flex align-items-center justify-content-center">
-                    <i class="bi bi-bell"></i>
-                </button>
-                <span class="notification-badge">3</span>
-            </div>
-            
-            <!-- User Avatar with Dropdown -->
-            <div class="user-avatar position-relative">
-                <?php echo $userInitial; ?>
-                <div class="user-dropdown">
-                    <div class="dropdown-header">
-                        <div class="user-name"><?php echo $username; ?></div>
-                        <div class="user-email"><?php echo $email; ?></div>
-                    </div>
-                    <div class="dropdown-menu">
-                        <a class="dropdown-item" href="#">
-                            <i class="bi bi-person me-2"></i>Profile
-                        </a>
-                        <a class="dropdown-item" href="#">
-                            <i class="bi bi-shield me-2"></i>Security
-                        </a>
-                        <a class="dropdown-item" href="#">
-                            <i class="bi bi-gear me-2"></i>Settings
-                        </a>
-                        <div class="dropdown-divider"></div>
-                        <a class="dropdown-item logout-item" href="logout.php">
-                            <i class="bi bi-box-arrow-right me-2"></i>Logout
-                        </a>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Standalone Logout Button -->
-            <a href="logout.php" class="logout-btn">
-                <i class="bi bi-box-arrow-right"></i>
-                <span>Logout</span>
-            </a>
+  <!-- Main Content -->
+  <div class="container px-5 py-4">
+    <!-- Info Cards -->
+    <div class="row g-4 mb-4">
+      <div class="col-lg-3 col-md-6">
+        <div class="info-card h-100 d-flex flex-column">
+          <div class="info-card-icon bg-success bg-opacity-10 text-success">
+            <i class="bi bi-lightning-charge"></i>
+          </div>
+          <h6 class="text-muted mb-1">Electricity Provider</h6>
+          <h4 class="mb-0" id="providerDisplay">Meralco</h4>
         </div>
+      </div>
+      <div class="col-lg-3 col-md-6">
+        <div class="info-card h-100 d-flex flex-column">
+          <div class="info-card-icon bg-success bg-opacity-10 text-success">
+            <i class="bi bi-wallet2"></i>
+          </div>
+          <h6 class="text-muted mb-1">Monthly Budget</h6>
+          <h4 class="mb-0">₱<span id="monthlyBudget">5,000</span></h4>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6">
+        <div class="info-card h-100 d-flex flex-column">
+          <div class="info-card-icon bg-success bg-opacity-10 text-success">
+            <i class="bi bi-plug"></i>
+          </div>
+          <h6 class="text-muted mb-1">Active Appliances</h6>
+          <h4 class="mb-0"><span id="activeAppliances">0</span> Devices</h4>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6">
+        <div class="info-card h-100 d-flex flex-column">
+          <div class="info-card-icon bg-success bg-opacity-10 text-success">
+            <i class="bi bi-graph-up"></i>
+          </div>
+          <h6 class="text-muted mb-1">Real-time Consumption</h6>
+          <h4 class="mb-0"><span id="thisMonthKwh">0.0</span> kWh</h4>
+        </div>
+      </div>
     </div>
-</nav>
 
-  <div class="main-content container-fluid px-4 py-5" style="max-width: 1200px; margin: 0 auto; padding-top: 40px;">
-
-    <!-- Updated Weather Widget -->
+    <!-- Weather Widget -->
     <div class="weather-widget bg-white p-4 mb-4 d-flex flex-column flex-md-row justify-content-between align-items-center">
       <div class="weather-current d-flex align-items-center gap-4 mb-3 mb-md-0">
         <div class="weather-icon" id="weatherIcon">
@@ -99,298 +151,101 @@ $email = htmlspecialchars($_SESSION['email'] ?? 'user@example.com');
           </div>
         </div>
       </div>
-
-      <!-- Forecast Container -->
       <div class="weather-forecast d-flex gap-3" id="weatherForecast">
         <!-- JS will inject forecast here -->
       </div>
     </div>
 
-    <!-- Rest of your content remains exactly the same -->
-    <div class="card bg-white p-4 mb-4">
-      <div class="section-header d-flex align-items-center gap-3 mb-4">
-        <div class="section-icon light rounded-circle d-flex align-items-center justify-content-center">
-          <i class="bi bi-bar-chart-line"></i>
-        </div>
-        <div>
-          <div class="section-title fw-semibold fs-5 mb-1">Electricity Rate & Provider</div>
-          <div class="section-subtitle small text-secondary">Customize your local rate per kWh and select your provider</div>
-        </div>
-      </div>
-
-      <div class="mt-4">
-        <label class="small text-secondary mb-2 d-block">Location</label>
-        <select id="locationSelect" class="form-select">
-          <option value="">Select Location</option>
-          <option value="Batangas City" selected>Batangas City</option>
-          <option value="Lipa">Lipa</option>
-          <option value="Tanauan">Tanauan</option>
-          <option value="Sto Tomas">Sto Tomas</option>
-        </select>
-      </div>
-
-      <div class="mt-3">
-        <label class="small text-secondary mb-2 d-block">Electricity Provider</label>
-        <select id="providerSelect" class="form-select">
-          <option value="Meralco" selected>Meralco</option>
-          <option value="BATELEC I">BATELEC I</option>
-          <option value="BATELEC II">BATELEC II</option>
-        </select>
-      </div>
-
-      <div class="rate-display d-flex justify-content-between align-items-center mt-4 p-4">
-        <div class="rate-input flex-fill me-4">
-          <label class="small text-secondary mb-2 d-block">Rate (₱ per kWh)</label>
-          <input type="number" id="rateInput" class="form-control" 
-                 value="12.00" step="0.5">
-        </div>
-        <div class="current-rate text-end">
-          <div class="current-rate-label small text-secondary text-uppercase mb-1">Current Rate</div>
-          <div class="current-rate-value fw-bold" id="currentRateDisplay">
-            ₱12.00
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="monthly-summary bg-white p-4 mb-4">
-      <div class="summary-header d-flex justify-content-between align-items-center mb-4">
-        <h6 class="mb-0 fw-semibold">Monthly Summary</h6>
-        <div class="summary-stats d-flex gap-4 small">
-          <div class="summary-stat text-center">
-            <div class="summary-label text-secondary mb-1">Avg</div>
-            <div class="summary-value fw-semibold" id="avgKwh">
-              0.00 kWh
-            </div>
-          </div>
-          <div class="summary-stat text-center">
-            <div class="summary-label text-secondary mb-1">Peak</div>
-            <div class="summary-value fw-semibold" id="peakKwh">
-              0.00 kWh
-            </div>
-          </div>
-          <div class="summary-stat text-center">
-            <div class="summary-label text-secondary mb-1">Total</div>
-            <div class="summary-value fw-semibold" id="totalKwhSummary">
-              0.00 kWh
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="small text-secondary">
-        Month: <span id="currentMonth">Jan 01 - Jan 31</span>
-      </div>
-      <div class="alert-warning d-flex align-items-start gap-3 mt-4 p-3" id="weatherAlert" style="display: none;">
-        <i class="bi bi-exclamation-triangle-fill fs-5"></i>
-        <div class="alert-content flex-fill">
-          <div class="alert-title fw-semibold mb-1">Weather data unavailable</div>
-          <div class="alert-text small">Using historical usage data for forecast. Weather integration will resume once data is
-            available.</div>
-        </div>
-      </div>
-    </div>
-
+    <!-- Main Content Areas -->
     <div class="row g-4 mb-4">
-      <div class="col-md-6">
-        <div class="stat-card bg-white p-4 position-relative">
-          <div class="stat-label small text-secondary mb-2">Monthly Budget</div>
-          <div class="stat-value dark fw-bold">
-            ₱<span id="monthlyBudget">5000</span>
+      <div class="col-lg-6">
+        <div class="chart-container h-100 d-flex flex-column">
+          <h5 class="mb-3"><i class="bi bi-list-check me-2"></i>Your Appliances & Add New Appliances</h5>
+          <p class="text-muted">Manage your registered appliances and add new ones to track</p>
+          
+          <!-- Add Appliance Form -->
+          <div class="mb-3">
+            <div class="row g-2 mb-2">
+              <div class="col-12 col-md-6">
+                <input type="text" id="deviceName" class="form-control form-control-sm" placeholder="Device Name">
+              </div>
+              <div class="col-6 col-md-3">
+                <input type="number" id="devicePower" class="form-control form-control-sm" placeholder="Power (W)">
+              </div>
+              <div class="col-6 col-md-3">
+                <input type="number" id="deviceHours" class="form-control form-control-sm" placeholder="Hours/Day">
+              </div>
+            </div>
+            <div class="row g-2 mb-2">
+              <div class="col-12 col-md-6">
+                <input type="number" id="deviceUsagePerWeek" class="form-control form-control-sm" placeholder="Usage/Week">
+              </div>
+              <div class="col-12 col-md-6">
+                <button class="btn btn-primary btn-sm w-100" onclick="addAppliance()">
+                  <i class="bi bi-plus-circle me-2"></i>Add Appliance
+                </button>
+              </div>
+            </div>
           </div>
-          <div class="stat-icon position-absolute rounded-circle d-flex align-items-center justify-content-center" style="right: 24px; top: 50%; transform: translateY(-50%);">💰</div>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="stat-card bg-white p-4 position-relative">
-          <div class="stat-label small text-secondary mb-2">Electricity Provider</div>
-          <div class="stat-value blue fw-bold" id="providerDisplay">
-            Meralco
-          </div>
-          <div class="stat-icon position-absolute rounded-circle d-flex align-items-center justify-content-center" style="right: 24px; top: 50%; transform: translateY(-50%);">🏢</div>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="stat-card bg-white p-4 position-relative">
-          <div class="stat-label small text-secondary mb-2">Active Appliances</div>
-          <div class="stat-value dark fw-bold" id="activeAppliances">
-            0
-          </div>
-          <div class="stat-icon position-absolute rounded-circle d-flex align-items-center justify-content-center" style="right: 24px; top: 50%; transform: translateY(-50%);">⚡</div>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="stat-card bg-white p-4 position-relative">
-          <div class="stat-label small text-secondary mb-2">This Month (kWh)</div>
-          <div class="stat-value fw-bold" id="thisMonthKwh">
-            0.0
-          </div>
-          <div class="stat-icon position-absolute rounded-circle d-flex align-items-center justify-content-center" style="right: 24px; top: 50%; transform: translateY(-50%);">📊</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="energy-overview p-4 mb-4">
-      <div class="section-header d-flex align-items-center gap-3 mb-4">
-        <div class="section-icon rounded-circle d-flex align-items-center justify-content-center text-white">
-          <i class="bi bi-lightning-charge-fill"></i>
-        </div>
-        <div>
-          <div class="section-title fw-semibold fs-5 mb-1">Energy Overview</div>
-          <div class="section-subtitle small text-secondary">Real-time consumption & costs</div>
-        </div>
-      </div>
-
-      <div class="overview-metric mb-4">
-        <div class="metric-label small text-secondary mb-2">Daily Consumption</div>
-        <div>
-          <span class="metric-value fw-bold" id="dailyConsumption">
-            0.00
-          </span>
-          <span class="metric-unit small text-secondary ms-1">kWh per 24 hours</span>
-        </div>
-      </div>
-
-      <div class="overview-metric">
-        <div class="metric-label small text-secondary mb-2">Monthly Cost</div>
-        <div>
-          <span class="metric-value fw-bold">
-            ₱<span id="monthlyCost">0</span>
-          </span>
-        </div>
-        <div class="metric-subtext small text-secondary mt-1">
-          Yearly: ₱<span id="yearlyCost">0</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="card bg-white p-4 mb-4">
-      <div class="section-header d-flex align-items-center gap-3 mb-4">
-        <div class="section-icon light rounded-circle d-flex align-items-center justify-content-center">
-          <i class="bi bi-plus-circle"></i>
-        </div>
-        <div>
-          <div class="section-title fw-semibold fs-5 mb-1">Add New Appliance</div>
-          <div class="section-subtitle small text-secondary">Track energy consumption for any device</div>
-        </div>
-      </div>
-
-      <div class="row g-3 mb-3">
-        <div class="col-12 col-md-6 col-lg-6">
-          <input type="text" id="deviceName" class="form-control" placeholder="e.g., Air Conditioner">
-        </div>
-        <div class="col-12 col-md-6 col-lg-2">
-          <input type="number" id="devicePower" class="form-control" placeholder="Power (W)">
-        </div>
-        <div class="col-12 col-md-6 col-lg-2">
-          <input type="number" id="deviceHours" class="form-control" placeholder="Hours/Day">
-        </div>
-        <div class="col-12 col-md-6 col-lg-2">
-          <input type="number" id="deviceUsagePerWeek" class="form-control" placeholder="Usage/Week">
-        </div>
-      </div>
-
-      <div class="small text-secondary mb-3">
-        <div class="row g-3">
-          <div class="col-12 col-md-6 col-lg-6">Device Name</div>
-          <div class="col-12 col-md-6 col-lg-2">Power (Watts)</div>
-          <div class="col-12 col-md-6 col-lg-2">Hours per Day</div>
-          <div class="col-12 col-md-6 col-lg-2">Usage per Week</div>
-        </div>
-      </div>
-
-      <button class="btn-add btn text-white w-100 d-flex align-items-center justify-content-center gap-2" onclick="addAppliance()">
-        <i class="bi bi-plus-lg"></i> Add Appliance
-      </button>
-
-      <div id="applianceList" class="mt-4">
-        <div class="empty-state text-center py-5 text-secondary small">
-          No appliances tracked yet. Add one to get started!
-        </div>
-      </div>
-    </div>
-
-    <div class="card bg-white p-4 mb-4">
-      <div class="section-header d-flex align-items-center gap-3 mb-4">
-        <div class="section-icon light rounded-circle d-flex align-items-center justify-content-center">
-          <i class="bi bi-plug"></i>
-        </div>
-        <div>
-          <div class="section-title fw-semibold fs-5 mb-1">Your Appliances</div>
-          <div class="section-subtitle small text-secondary" id="applianceCount">
-            0 devices in your home
+          
+          <!-- Appliance List -->
+          <div id="applianceDisplayList" class="flex-grow-1">
+            <div class="text-center text-muted small py-3">
+              No appliances tracked yet. Add one to get started!
+            </div>
           </div>
         </div>
       </div>
-
-      <div id="applianceDisplayList">
-        <div class="empty-state text-center py-5 text-secondary small">
-          No appliances tracked yet. Add one to get started!
+      <div class="col-lg-6">
+        <div class="chart-container h-100 d-flex flex-column">
+          <h5 class="mb-3"><i class="bi bi-bar-chart me-2"></i>Energy Overview</h5>
+          <p class="text-muted">Visual representation of your energy consumption patterns</p>
+          <div class="mt-4 flex-grow-1">
+            <div class="mb-3">
+              <div class="small text-secondary mb-1">Daily Consumption</div>
+              <div class="h4 mb-0"><span id="dailyConsumption">0.00</span> <small class="text-muted">kWh</small></div>
+            </div>
+            <div class="mb-3">
+              <div class="small text-secondary mb-1">Monthly Cost</div>
+              <div class="h4 mb-0">₱<span id="monthlyCost">0</span></div>
+              <div class="small text-muted">Yearly: ₱<span id="yearlyCost">0</span></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="card card-gradient p-4 mb-4">
-      <div class="section-header d-flex align-items-center gap-3 mb-4">
-        <div class="section-icon light rounded-circle d-flex align-items-center justify-content-center">
-          <i class="bi bi-fire"></i>
-        </div>
-        <div>
-          <div class="section-title fw-semibold fs-5 mb-1">Top Consumers</div>
-          <div class="section-subtitle small text-secondary">Highest energy-drawing appliances</div>
+    <!-- Additional Sections -->
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <div class="chart-container h-100 d-flex flex-column">
+          <h5 class="mb-3"><i class="bi bi-calendar-check me-2"></i>Monthly Energy Forecast</h5>
+          <p class="text-muted">Predicted energy usage based on your consumption patterns</p>
+          <div class="mt-4 flex-grow-1">
+            <canvas id="forecastChart" style="max-height: 300px;"></canvas>
+          </div>
         </div>
       </div>
-
-      <div id="topConsumers">
-        <div class="empty-state text-center py-5 text-secondary small">
-          No appliances tracked yet
+      <div class="col-lg-4">
+        <div class="chart-container h-100 d-flex flex-column">
+          <h5 class="mb-3"><i class="bi bi-lightbulb me-2"></i>Energy Tips & Recommendations</h5>
+          <div class="mt-3 flex-grow-1">
+            <div class="alert alert-info mb-3">
+              <i class="bi bi-info-circle me-2"></i>
+              <strong>Tip:</strong> Use LED bulbs to save up to 75% on lighting costs
+            </div>
+            <div class="alert alert-success mb-3">
+              <i class="bi bi-check-circle me-2"></i>
+              <strong>Great job!</strong> You're managing your energy efficiently
+            </div>
+            <div class="alert alert-warning mb-0">
+              <i class="bi bi-exclamation-triangle me-2"></i>
+              <strong>Notice:</strong> Unplug devices when not in use to reduce standby power
+            </div>
+          </div>
         </div>
       </div>
     </div>
-
-    <div class="card bg-white p-4 mb-4">
-      <div class="section-header d-flex align-items-center gap-3 mb-4">
-        <div class="section-icon light rounded-circle d-flex align-items-center justify-content-center">
-          <i class="bi bi-graph-up-arrow"></i>
-        </div>
-        <div class="flex-fill">
-          <div class="section-title fw-semibold fs-5 mb-1">Monthly Energy Forecast</div>
-          <div class="section-subtitle small text-secondary">AI predictions by week factoring in temperature, historical usage, and occupancy
-            status</div>
-        </div>
-        <span class="small text-warning d-flex align-items-center gap-1">
-          <i class="bi bi-exclamation-circle"></i> Using historical data
-        </span>
-      </div>
-
-      <canvas id="forecastChart" style="max-height: 300px;"></canvas>
-    </div>
-
-    <div class="card card-gradient p-4 mb-4">
-      <div class="section-header d-flex align-items-center gap-3 mb-4">
-        <div class="section-icon light rounded-circle d-flex align-items-center justify-content-center">
-          <i class="bi bi-lightbulb"></i>
-        </div>
-        <div>
-          <div class="section-title fw-semibold fs-5 mb-1">Energy Tips & Recommendations</div>
-        </div>
-      </div>
-
-      <ul class="list-unstyled mb-0" id="tipsList">
-        <li class="tip-item d-flex align-items-start gap-3 p-3 mb-2 bg-white">
-          <div class="tip-icon fs-5">💡</div>
-          <div class="small">Use LED lights to reduce consumption by 75%</div>
-        </li>
-        <li class="tip-item d-flex align-items-start gap-3 p-3 mb-2 bg-white">
-          <div class="tip-icon fs-5">⚡</div>
-          <div class="small">Unplug devices to avoid standby power drain</div>
-        </li>
-        <li class="tip-item d-flex align-items-start gap-3 p-3 mb-2 bg-white">
-          <div class="tip-icon fs-5">❄️</div>
-          <div class="small">Adjust thermostat to save up to 10% monthly</div>
-        </li>
-      </ul>
-    </div>
-
   </div>
 
   <!-- Modal and chatbot code remains exactly the same -->
@@ -473,21 +328,22 @@ $email = htmlspecialchars($_SESSION['email'] ?? 'user@example.com');
     </div>
   </div>
 
-  <button class="chat-fab position-fixed rounded-circle border-0 d-flex align-items-center justify-content-center text-white" style="bottom: 30px; right: 30px; z-index: 999;" onclick="openChatbot()">
-    <i class="bi bi-chat-dots-fill"></i>
-  </button>
-
-  <button class="donation-fab position-fixed rounded-circle border-0 d-flex align-items-center justify-content-center text-white" style="bottom: 100px; right: 30px; z-index: 999;" onclick="openDonationModal()">
+  <!-- Floating Action Buttons -->
+  <button class="floating-btn donation-btn" onclick="openDonationModal()">
     <i class="bi bi-heart-fill"></i>
   </button>
 
+  <button class="floating-btn chatbot-btn" onclick="openChatbot()">
+    <i class="bi bi-chat-dots-fill"></i>
+  </button>
+
   <script>
-    let appliances = [];
+    let appliances = <?php echo json_encode($appliances); ?>;
     let currentRate = 12.00;
     let forecastChart = null;
-    const WEATHER_API_KEY = 'a4ad5de980d109abed0fec591eefd391'; // Updated API key
+    const WEATHER_API_KEY = 'a4ad5de980d109abed0fec591eefd391';
     let currentLocation = 'Batangas';
-    let userId = 1;
+    let userId = <?php echo $userId; ?>;
 
     const providerByLocation = {
       "Batangas City": { provider: "Meralco", rate: 11.5 },
@@ -497,38 +353,10 @@ $email = htmlspecialchars($_SESSION['email'] ?? 'user@example.com');
     };
 
     document.addEventListener('DOMContentLoaded', function() {
-      updateRateDisplay();
       updateAllMetrics();
       initForecastChart();
-      fetchWeather(); // Use the new weather function
-      
-      document.getElementById('rateInput').addEventListener('input', function() {
-        currentRate = parseFloat(this.value) || 12;
-        updateRateDisplay();
-        updateAllMetrics();
-        saveSettings();
-      });
-
-      document.getElementById('providerSelect').addEventListener('change', function() {
-        document.getElementById('providerDisplay').textContent = this.value;
-        saveSettings();
-      });
-
-      document.getElementById("locationSelect").addEventListener("change", function () {
-        const data = providerByLocation[this.value];
-        if (!data) return;
-
-        currentLocation = this.value;
-        currentRate = data.rate;
-        document.getElementById("providerSelect").value = data.provider;
-        document.getElementById("providerDisplay").textContent = data.provider;
-        document.getElementById("rateInput").value = data.rate;
-
-        updateRateDisplay();
-        updateAllMetrics();
-        fetchWeather(); // Use the new weather function
-        saveSettings();
-      });
+      fetchWeather();
+      loadAppliances();
     });
 
     // New weather functions from your updated code
@@ -539,13 +367,11 @@ $email = htmlspecialchars($_SESSION['email'] ?? 'user@example.com');
         if (data.cod === '200') {
           updateCurrentWeather(data);
           updateWeatherForecast(data);
-          document.getElementById('weatherAlert').style.display = 'none';
         } else {
           throw new Error('Weather data unavailable');
         }
       } catch (error) {
         console.error('Error fetching weather:', error);
-        document.getElementById('weatherAlert').style.display = 'flex';
       }
     }
 
@@ -592,9 +418,6 @@ $email = htmlspecialchars($_SESSION['email'] ?? 'user@example.com');
     }
 
     async function saveSettings() {
-      const location = document.getElementById('locationSelect').value;
-      const provider = document.getElementById('providerSelect').value;
-      const rate = parseFloat(document.getElementById('rateInput').value);
       const budget = parseFloat(document.getElementById('monthlyBudget').innerText.replace('₱', '').replace(',', ''));
       
       try {
@@ -604,9 +427,6 @@ $email = htmlspecialchars($_SESSION['email'] ?? 'user@example.com');
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ 
-            location: location, 
-            provider: provider, 
-            rate_per_kwh: rate,
             monthly_budget: budget
           })
         });
@@ -743,8 +563,19 @@ $email = htmlspecialchars($_SESSION['email'] ?? 'user@example.com');
       }
     }
 
-    function updateRateDisplay() {
-      document.getElementById('currentRateDisplay').textContent = `₱${currentRate.toFixed(2)}`;
+    async function loadAppliances() {
+      // Appliances are loaded from PHP on page load
+      // Calculate monthly_kwh for each appliance if not present
+      appliances = appliances.map(app => {
+        if (!app.monthly_kwh && app.power_kwh && app.hours_per_day && app.usage_per_week) {
+          app.monthly_kwh = parseFloat(app.power_kwh) * parseFloat(app.hours_per_day) * parseFloat(app.usage_per_week) * 4.33;
+        }
+        if (!app.name && app.appliance_name) {
+          app.name = app.appliance_name;
+        }
+        return app;
+      });
+      updateAllMetrics();
     }
 
     async function addAppliance() {
@@ -782,6 +613,7 @@ $email = htmlspecialchars($_SESSION['email'] ?? 'user@example.com');
           document.getElementById('deviceHours').value = '';
           document.getElementById('deviceUsagePerWeek').value = '';
           
+          // Reload appliances
           location.reload();
         } else {
           alert('Error adding appliance: ' + result.error);
@@ -820,25 +652,25 @@ $email = htmlspecialchars($_SESSION['email'] ?? 'user@example.com');
     }
 
     function updateAllMetrics() {
-      const totalKwh = appliances.reduce((sum, app) => sum + parseFloat(app.monthly_kwh), 0);
+      const totalKwh = appliances.reduce((sum, app) => sum + parseFloat(app.monthly_kwh || 0), 0);
       const totalCost = totalKwh * currentRate;
       const dailyKwh = totalKwh / 30;
       const yearlyCost = totalCost * 12;
 
-      document.getElementById('activeAppliances').textContent = appliances.length;
-      document.getElementById('thisMonthKwh').textContent = totalKwh.toFixed(1);
-      document.getElementById('dailyConsumption').textContent = dailyKwh.toFixed(2);
-      document.getElementById('monthlyCost').textContent = Math.round(totalCost);
-      document.getElementById('yearlyCost').textContent = Math.round(yearlyCost);
+      const activeAppliancesEl = document.getElementById('activeAppliances');
+      const thisMonthKwhEl = document.getElementById('thisMonthKwh');
+      const dailyConsumptionEl = document.getElementById('dailyConsumption');
+      const monthlyCostEl = document.getElementById('monthlyCost');
+      const yearlyCostEl = document.getElementById('yearlyCost');
 
-      const avgKwh = appliances.length > 0 ? totalKwh / appliances.length : 0;
-      const peakKwh = appliances.length > 0 ? Math.max(...appliances.map(a => parseFloat(a.monthly_kwh))) : 0;
-      
-      document.getElementById('avgKwh').textContent = avgKwh.toFixed(2) + ' kWh';
-      document.getElementById('peakKwh').textContent = peakKwh.toFixed(2) + ' kWh';
-      document.getElementById('totalKwhSummary').textContent = totalKwh.toFixed(2) + ' kWh';
+      if (activeAppliancesEl) activeAppliancesEl.textContent = appliances.length;
+      if (thisMonthKwhEl) thisMonthKwhEl.textContent = totalKwh.toFixed(1);
+      if (dailyConsumptionEl) dailyConsumptionEl.textContent = dailyKwh.toFixed(2);
+      if (monthlyCostEl) monthlyCostEl.textContent = Math.round(totalCost);
+      if (yearlyCostEl) yearlyCostEl.textContent = Math.round(yearlyCost);
 
       updateForecastChart(totalKwh);
+      updateApplianceDisplay();
     }
   
     function initForecastChart() {
@@ -891,9 +723,46 @@ $email = htmlspecialchars($_SESSION['email'] ?? 'user@example.com');
       
       forecastChart.update();
     }
+
+    function updateApplianceDisplay() {
+      const container = document.getElementById('applianceDisplayList');
+      if (!container) return;
+
+      if (appliances.length === 0) {
+        container.innerHTML = '<div class="text-center text-muted small py-3">No appliances tracked yet. Add one to get started!</div>';
+        return;
+      }
+
+      container.innerHTML = appliances.map(app => {
+        const appName = app.name || app.appliance_name || 'Unknown';
+        const monthlyKwh = parseFloat(app.monthly_kwh || 0);
+        const cost = monthlyKwh * currentRate;
+        const appId = app.appliance_id || app.id || 0;
+        return `
+          <div class="card mb-2">
+            <div class="card-body p-3">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="mb-1">${appName}</h6>
+                  <small class="text-muted">${monthlyKwh.toFixed(2)} kWh/month • ₱${cost.toFixed(2)}</small>
+                </div>
+                <button class="btn btn-sm btn-outline-danger" onclick="removeApplianceDB(${appId})">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
   </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 </body>
+</html>
+</html>
+</body>
+</html>
+</html>
 </html>
