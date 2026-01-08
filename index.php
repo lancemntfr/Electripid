@@ -36,7 +36,7 @@
     <section id="home" class="hero-section py-5">
         <div class="container">
             <div class="row align-items-center">
-                <div class="col-6">
+                <div class="col-12 col-md-6">
                     <h1 class="display-4 fw-bold text-primary mb-4">Smart Energy Management for a Sustainable Future</h1>
                     <p class="fs-5 text-secondary mb-4" style="max-width: 600px;">
                         Track your electricity consumption, get personalized recommendations, 
