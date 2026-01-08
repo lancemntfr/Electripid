@@ -95,12 +95,62 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 15px;
+            padding: 0;
+            margin: 0;
+            background: linear-gradient(135deg, #e3f2fd 0%, white 100%);
         }
-        .auth-card {
-            max-width: 900px;
+        .auth-container {
+            max-width: 1200px;
+            width: 100%;
+            display: flex;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             border-radius: 10px;
+            overflow: hidden;
+            min-height: 550px;
+        }
+        .form-section {
+            flex: 1;
+            background: white;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .welcome-section {
+            flex: 0 0 45%;
+            background: #1e88e5;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: white;
+        }
+        .welcome-section h1 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            line-height: 1.2;
+        }
+        .welcome-section p {
+            font-size: 1rem;
+            margin-bottom: 30px;
+            opacity: 0.95;
+        }
+        .welcome-section .login-link {
+            color: #90caf9;
+            text-decoration: underline;
+            font-weight: 500;
+        }
+        .welcome-section .login-link:hover {
+            color: #bbdefb;
+        }
+        .form-section h2 {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 30px;
+            color: #333;
         }
         .form-label {
             font-size: 0.85rem;
@@ -115,159 +165,177 @@
             margin-bottom: 0.75rem !important;
         }
         .logo-icon {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e88e5 0%, #0d47a1 100%);
         }
         .eye-toggle {
             cursor: pointer;
         }
         .eye-toggle:hover {
-            color: #667eea !important;
+            color: #1e88e5 !important;
+        }
+        .btn-signup {
+            background: #1e88e5;
+            border: none;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            border-radius: 5px;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .btn-signup:hover {
+            background: #1565c0;
+        }
+        @media (max-width: 768px) {
+            .auth-container {
+                flex-direction: column;
+            }
+            .welcome-section {
+                flex: 1;
+                min-height: 300px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="auth-card bg-white p-4 w-100">
-        <!-- Header -->
-        <div class="text-center mb-3">
-            <div class="logo-icon rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2 text-white" style="width: 50px; height: 50px; font-size: 1.5rem;">⚡</div>
-            <h3 class="text-primary mb-1">Create Your Account</h3>
-            <p class="text-muted small mb-0">Join Electripid and start saving energy today!</p>
-        </div>
-        
-        <!-- Alert Messages -->
-        <?php if (!empty($error_message)): ?>
-            <div class="alert alert-danger alert-dismissible fade show py-2" role="alert">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i><?php echo $error_message; ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        <?php endif; ?>
-        
-        <?php if (!empty($success_message)): ?>
-            <div class="alert alert-success alert-dismissible fade show py-2" role="alert">
-                <i class="bi bi-check-circle-fill me-2"></i><?php echo htmlspecialchars($success_message); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        <?php endif; ?>
-        
-        <!-- Registration Form -->
-        <form method="POST" action="" id="registerForm">
-            <input type="hidden" name="register" value="1">
+    <div class="auth-container">
+        <!-- Left Section - Form (White Background) -->
+        <div class="form-section">
+            <h2>Sign Up</h2>
             
-            <!-- Two Column Layout -->
-            <div class="row">
-                <!-- Left Column -->
-                <div class="col-md-6">
-                    <!-- Name Fields -->
-                    <div class="row g-2 mb-compact">
-                        <div class="col-6">
-                            <label class="form-label">First Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="first_name" required placeholder="First name" autocomplete="given-name" value="<?php echo isset($_POST['first_name']) ? htmlspecialchars($_POST['first_name']) : ''; ?>">
+            <!-- Alert Messages -->
+            <?php if (!empty($error_message)): ?>
+                <div class="alert alert-danger alert-dismissible fade show py-2" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i><?php echo $error_message; ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            <?php endif; ?>
+            
+            <?php if (!empty($success_message)): ?>
+                <div class="alert alert-success alert-dismissible fade show py-2" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i><?php echo htmlspecialchars($success_message); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            <?php endif; ?>
+            
+            <!-- Registration Form -->
+            <form method="POST" action="" id="registerForm">
+                <input type="hidden" name="register" value="1">
+                
+                <div class="row g-3">
+                    <!-- Left Column -->
+                    <div class="col-md-6">
+                        <!-- Name Fields -->
+                        <div class="row g-2 mb-compact">
+                            <div class="col-6">
+                                <label class="form-label">First Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="first_name" required placeholder="Name" autocomplete="given-name" value="<?php echo isset($_POST['first_name']) ? htmlspecialchars($_POST['first_name']) : ''; ?>">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Last Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="last_name" required placeholder="Last name" autocomplete="family-name" value="<?php echo isset($_POST['last_name']) ? htmlspecialchars($_POST['last_name']) : ''; ?>">
+                            </div>
                         </div>
-                        <div class="col-6">
-                            <label class="form-label">Last Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="last_name" required placeholder="Last name" autocomplete="family-name" value="<?php echo isset($_POST['last_name']) ? htmlspecialchars($_POST['last_name']) : ''; ?>">
+
+                        <!-- Email -->
+                        <div class="mb-compact">
+                            <label class="form-label">Email Address <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" name="email" required placeholder="Email" autocomplete="email" value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
                         </div>
-                    </div>
 
-                    <!-- Email -->
-                    <div class="mb-compact">
-                        <label class="form-label">Email Address <span class="text-danger">*</span></label>
-                        <input type="email" class="form-control" name="email" required placeholder="your@email.com" autocomplete="email" value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
-                    </div>
+                        <!-- Location Fields -->
+                        <div class="row g-2 mb-compact">
+                            <div class="col-6">
+                                <label class="form-label">City <span class="text-danger">*</span></label>
+                                <select class="form-select" id="city" name="city" required>
+                                    <option value="">Select city</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Barangay <span class="text-danger">*</span></label>
+                                <select class="form-select" id="barangay" name="barangay" disabled required>
+                                    <option value="">Select barangay</option>
+                                </select>
+                            </div>
+                        </div>
 
-                    <!-- Location Fields -->
-                    <div class="row g-2 mb-compact">
-                        <div class="col-6">
-                            <label class="form-label">City <span class="text-danger">*</span></label>
-                            <select class="form-select" id="city" name="city" required>
-                                <option value="">Select city</option>
+                        <!-- Electricity Provider -->
+                        <div class="mb-compact">
+                            <label class="form-label">Electricity Provider <span class="text-danger">*</span></label>
+                            <select class="form-select" name="provider_id" required>
+                                <option value="">Select your provider</option>
+                                <option value="1" <?php echo (isset($_POST['provider_id']) && $_POST['provider_id'] == '1') ? 'selected' : ''; ?>>Meralco</option>
+                                <option value="2" <?php echo (isset($_POST['provider_id']) && $_POST['provider_id'] == '2') ? 'selected' : ''; ?>>Batelec I</option>
+                                <option value="3" <?php echo (isset($_POST['provider_id']) && $_POST['provider_id'] == '3') ? 'selected' : ''; ?>>Batelec II</option>
                             </select>
                         </div>
-                        <div class="col-6">
-                            <label class="form-label">Barangay <span class="text-danger">*</span></label>
-                            <select class="form-select" id="barangay" name="barangay" disabled required>
-                                <option value="">Select barangay</option>
-                            </select>
-                        </div>
                     </div>
 
-                    <!-- Electricity Provider -->
-                    <div class="mb-compact">
-                        <label class="form-label">Electricity Provider <span class="text-danger">*</span></label>
-                        <select class="form-select" name="provider_id" required>
-                            <option value="">Select your provider</option>
-                            <option value="1" <?php echo (isset($_POST['provider_id']) && $_POST['provider_id'] == '1') ? 'selected' : ''; ?>>Meralco</option>
-                            <option value="2" <?php echo (isset($_POST['provider_id']) && $_POST['provider_id'] == '2') ? 'selected' : ''; ?>>Batelec I</option>
-                            <option value="3" <?php echo (isset($_POST['provider_id']) && $_POST['provider_id'] == '3') ? 'selected' : ''; ?>>Batelec II</option>
-                        </select>
+                    <!-- Right Column -->
+                    <div class="col-md-6">
+                        <!-- Password -->
+                        <div class="mb-compact">
+                            <label class="form-label">Password <span class="text-danger">*</span></label>
+                            <div class="position-relative">
+                                <input type="password" class="form-control" name="password" 
+                                       id="password" required minlength="6"
+                                       placeholder="Password"
+                                       onkeyup="checkPasswordStrength()"
+                                       autocomplete="new-password">
+                                <button type="button" class="eye-toggle position-absolute text-secondary z-3 border-0 bg-transparent" id="togglePassword" style="right: 10px; top: 50%; transform: translateY(-50%);">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            <div class="small text-secondary mt-1" style="font-size: 0.75rem;">
+                                <div id="lengthReq"><i class="bi bi-circle"></i> 6+ characters</div>
+                                <div id="caseReq"><i class="bi bi-circle"></i> Upper & lowercase</div>
+                                <div id="numberReq"><i class="bi bi-circle"></i> One number</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Confirm Password -->
+                        <div class="mb-compact">
+                            <label class="form-label">Confirm Password <span class="text-danger">*</span></label>
+                            <div class="position-relative">
+                                <input type="password" class="form-control" name="confirm_password" 
+                                       id="confirm_password" required
+                                       placeholder="Re-enter password"
+                                       onkeyup="checkPasswordMatch()"
+                                       autocomplete="new-password">
+                                <button type="button" class="eye-toggle position-absolute text-secondary z-3 border-0 bg-transparent" id="toggleConfirmPassword" style="right: 10px; top: 50%; transform: translateY(-50%);">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            <div class="mt-1" id="passwordMatch"></div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Right Column -->
-                <div class="col-md-6">
-                    <!-- Password -->
-                    <div class="mb-compact">
-                        <label class="form-label">Password <span class="text-danger">*</span></label>
-                        <div class="position-relative">
-                            <input type="password" class="form-control" name="password" 
-                                   id="password" required minlength="6"
-                                   placeholder="Create password"
-                                   onkeyup="checkPasswordStrength()"
-                                   autocomplete="new-password">
-                            <button type="button" class="eye-toggle position-absolute text-secondary z-3 border-0 bg-transparent" id="togglePassword" style="right: 10px; top: 50%; transform: translateY(-50%);">
-                                <i class="bi bi-eye"></i>
-                            </button>
-                        </div>
-                        <div class="small text-secondary mt-1" style="font-size: 0.75rem;">
-                            <div id="lengthReq"><i class="bi bi-circle"></i> 6+ characters</div>
-                            <div id="caseReq"><i class="bi bi-circle"></i> Upper & lowercase</div>
-                            <div id="numberReq"><i class="bi bi-circle"></i> One number</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Confirm Password -->
-                    <div class="mb-compact">
-                        <label class="form-label">Confirm Password <span class="text-danger">*</span></label>
-                        <div class="position-relative">
-                            <input type="password" class="form-control" name="confirm_password" 
-                                   id="confirm_password" required
-                                   placeholder="Re-enter password"
-                                   onkeyup="checkPasswordMatch()"
-                                   autocomplete="new-password">
-                            <button type="button" class="eye-toggle position-absolute text-secondary z-3 border-0 bg-transparent" id="toggleConfirmPassword" style="right: 10px; top: 50%; transform: translateY(-50%);">
-                                <i class="bi bi-eye"></i>
-                            </button>
-                        </div>
-                        <div class="mt-1" id="passwordMatch"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Terms, Button, and Links - Centered -->
-            <div class="text-center mt-3">
-                <div class="form-check d-inline-block text-start mb-2">
+                <!-- Terms Checkbox -->
+                <div class="form-check mb-3 mt-2">
                     <input type="checkbox" class="form-check-input" id="terms" name="terms" required>
                     <label class="form-check-label small" for="terms">
                         I agree to the <a href="#" class="text-decoration-none">Terms of Service</a> and <a href="#" class="text-decoration-none">Privacy Policy</a>
                     </label>
                 </div>
                 
-                <button type="submit" class="btn btn-primary w-75 py-2 mb-2" id="registerBtn">
-                    <i class="bi bi-person-plus me-2"></i> Create Account
+                <!-- Submit Button -->
+                <button type="submit" class="btn btn-signup text-white" id="registerBtn">
+                    SIGN UP
                 </button>
-                
-                <div>
-                    <p class="mb-1 small">Already have an account? 
-                        <a href="login.php" class="text-decoration-none">Sign in here</a>
-                    </p>
-                    <p class="mb-0 small">
-                        <a href="../index.php" class="text-decoration-none">
-                            <i class="bi bi-arrow-left me-1"></i> Back to Homepage
-                        </a>
-                    </p>
-                </div>
+            </form>
+        </div>
+
+        <!-- Right Section - Welcome (Blue Background) -->
+        <div class="welcome-section">
+            <h1>Let's Register<br>Account!</h1>
+            <p>Enter your information to create an account.</p>
+            <div>
+                <p class="mb-0">Already have an account?</p>
+                <a href="login.php" class="login-link">Log In</a>
             </div>
-        </form>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

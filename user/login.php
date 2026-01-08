@@ -107,8 +107,18 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 <link rel="stylesheet" href="../assets/css/user.css">
+<style>
+    body {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 15px;
+        background: linear-gradient(135deg, #e3f2fd 0%, white 100%);
+    }
+</style>
 </head>
-<body class="min-vh-100 d-flex align-items-center justify-content-center p-3">
+<body>
     <div class="login-card bg-white p-5 w-100" style="max-width: 500px;">
         <div class="text-center mb-4">
             <div class="logo-icon rounded-circle d-flex align-items-center justify-content-center mx-auto mb-4 text-white">⚡</div>
