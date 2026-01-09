@@ -1,20 +1,13 @@
 <?php
     session_start();
     require_once __DIR__ . '/../connect.php';
-
-    use PHPMailer\PHPMailer\PHPMailer;
-    use PHPMailer\PHPMailer\Exception;
-
-    require_once __DIR__ . '/../phpmailer/src/Exception.php';
-    require_once __DIR__ . '/../phpmailer/src/PHPMailer.php';
-    require_once __DIR__ . '/../phpmailer/src/SMTP.php';
+    require_once __DIR__ . '/phpmailer.php';
 
     $error_message = '';
     $success_message = '';
 
-    //Get the elctricity providers
+    // Get electricity providers
     $providers_result = executeQuery("SELECT provider_id, provider_name FROM electricity_provider ORDER BY provider_name ASC");
-    
     $providers = [];
     if ($providers_result && mysqli_num_rows($providers_result) > 0) {
         while ($row = mysqli_fetch_assoc($providers_result)) {
@@ -22,6 +15,7 @@
         }
     }
 
+    // Redirect if already logged in
     if (isset($_SESSION['user_id'])) {
         header('Location: dashboard.php');
         exit;
@@ -70,61 +64,31 @@
                 $barangay = mysqli_real_escape_string($conn, $barangay);
                 $provider_id = mysqli_real_escape_string($conn, $provider_id);
 
-                // 🔴 Account is INACTIVE until email is verified
                 $insert_user_query = "INSERT INTO USER (fname, lname, email, cp_number, city, barangay, password, role, acc_status) VALUES ('$fname', '$lname', '$email', '$cp_number', '$city', '$barangay', '$hashed_password', 'user', 'inactive')";
-
                 $user_result = executeQuery($insert_user_query);
 
                 if ($user_result) {
-
                     $user_id = mysqli_insert_id($conn);
 
-                    // Create household
                     $insert_household_query = "INSERT INTO HOUSEHOLD (user_id, provider_id) VALUES ('$user_id', '$provider_id')";
                     executeQuery($insert_household_query);
 
-                    // Generate verification token
-                    $verification_code = bin2hex(random_bytes(16));
+                    // Generate 6-digit verification code
+                    $verification_code = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
                     $expires_at = date("Y-m-d H:i:s", strtotime("+15 minutes"));
-                    $ip_address = getenv('IP_ADDRESS');
 
                     // Save verification record
                     $verification_query = "INSERT INTO VERIFICATION (user_id, verification_type, verification_code, expires_at) VALUES ('$user_id', 'email', '$verification_code', '$expires_at')";
                     executeQuery($verification_query);
 
-                    // Send verification email
-                    $verify_link = "http://$ip_address/electripid/user/verify_email.php?code=$verification_code";
+                    // Store pending user_id in session
+                    $_SESSION['pending_user_id'] = $user_id;
 
-                    $mail = new PHPMailer(true);
+                    // Send verification code via PHPMailer
+                    sendVerificationEmail($email, $verification_code);
 
-                    try {
-                        $mail->isSMTP();
-                        $mail->Host = 'smtp.gmail.com';
-                        $mail->SMTPAuth = true;
-                        $mail->Username = getenv('EMAIL_USER');
-                        $mail->Password = getenv('EMAIL_APP_PASSWORD');
-                        $mail->SMTPSecure = 'tls';
-                        $mail->Port = 587;
-
-                        $mail->setFrom(getenv('EMAIL_USER'), 'Electripid');
-                        $mail->addAddress($email);
-
-                        $mail->isHTML(true);
-                        $mail->Subject = 'Electripid Email Verification';
-                        $mail->Body = "
-                            <h3>Welcome to Electripid</h3>
-                            <p>Please verify your email by clicking the link below:</p>
-                            <a href='$verify_link'>Verify Email</a>
-                            <p>This link expires in 15 minutes.</p>
-                        ";
-
-                        $mail->send();
-
-                        $success_message = 'Registration successful! Please check your email to verify your account.';
-                    } catch (Exception $e) {
-                        $error_message = 'Account created, but verification email could not be sent.';
-                    }
-
+                    header('Location: verify_code.php');
+                    exit;
                 } else {
                     $error_message = 'Registration failed. Please try again later.';
                 }
@@ -132,7 +96,6 @@
         }
     }
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">
