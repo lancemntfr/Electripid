@@ -101,125 +101,150 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-<link rel="stylesheet" href="../assets/css/user.css">
-<style>
-    body {
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 15px;
-        background: linear-gradient(135deg, #e3f2fd 0%, white 100%);
-    }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electripid - Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="../assets/css/user.css">
 </head>
-<body>
-    <div class="login-card bg-white p-5 w-100" style="max-width: 500px;">
-        <div class="text-center mb-4">
-            <div class="logo-icon rounded-circle d-flex align-items-center justify-content-center mx-auto mb-4 text-white">⚡</div>
-            <h2 class="text-primary">Welcome Back</h2>
-            <p class="text-muted">Sign in to your Electripid account</p>
+<body class="login-page">
+    <div class="auth-container">
+        <!-- Left Section - Welcome (Blue Background) -->
+        <div class="welcome-section">
+            <h1>Welcome<br>Back!</h1>
+            <p>Enter your credentials to access your account.</p>
+            <div>
+                <p class="mb-0">Don't have an account?</p>
+                <a href="register.php" class="register-link">Create Account</a>
+            </div>
         </div>
 
-        <?php if (!empty($error_message)): ?>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i><?= htmlspecialchars($error_message); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        <?php endif; ?>
-
-        <?php if (!empty($success_message)): ?>
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="bi bi-check-circle-fill me-2"></i><?= htmlspecialchars($success_message); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        <?php endif; ?>
-
-        <!-- LOGIN FORM (for both user and admin) -->
-        <form method="POST" action="" id="loginForm">
-            <div class="mb-3">
-                <label class="form-label">Email Address</label>
-                <input type="email" class="form-control" name="email" required placeholder="Enter your email address" autocomplete="email">
-            </div>
-
-            <div class="mb-3 position-relative">
-                <label class="form-label">Password</label>
-                <div class="input-group">
-                    <input type="password" class="form-control" name="password" id="password" required placeholder="Enter your password" autocomplete="current-password">
-                    <span class="eye-toggle position-absolute text-secondary z-3" id="togglePassword">
-                        <i class="bi bi-eye"></i>
-                    </span>
+        <!-- Right Section - Form (White Background) -->
+        <div class="form-section">
+            <div class="login-form-container">
+                <div class="text-center mb-4">
+                    <h2>Log In</h2>
                 </div>
-                <div class="d-flex justify-content-between mt-2">
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input" id="remember" name="remember">
-                        <label class="form-check-label" for="remember">Remember me</label>
+                
+                <!-- Alert Messages -->
+                <?php if (!empty($error_message)): ?>
+                    <div class="alert alert-danger alert-dismissible fade show py-2" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i><?php echo htmlspecialchars($error_message); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
-                    <a href="forgot_password.php" class="text-decoration-none text-primary small">Forgot password?</a>
-                </div>
+                <?php endif; ?>
+                
+                <?php if (!empty($success_message)): ?>
+                    <div class="alert alert-success alert-dismissible fade show py-2" role="alert">
+                        <i class="bi bi-check-circle-fill me-2"></i><?php echo htmlspecialchars($success_message); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Login Form -->
+                <form method="POST" action="" id="loginForm">
+                    <div class="mb-compact">
+                        <label class="form-label">Email Address <span class="text-danger">*</span></label>
+                        <input type="email" class="form-control" name="email" required placeholder="Enter your email address" autocomplete="email" value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
+                    </div>
+
+                    <div class="mb-compact">
+                        <label class="form-label">Password <span class="text-danger">*</span></label>
+                        <div class="position-relative">
+                            <input type="password" class="form-control" name="password" 
+                                   id="password" required
+                                   placeholder="Enter your password"
+                                   autocomplete="current-password">
+                            <button type="button" class="eye-toggle position-absolute text-secondary z-3 border-0 bg-transparent" id="togglePassword" style="right: 10px; top: 50%; transform: translateY(-50%);">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                            <label class="form-check-label small" for="remember">Remember me</label>
+                        </div>
+                        <a href="forgot_password.php" class="text-decoration-none small" style="color: #1e88e5;">
+                            Forgot password?
+                        </a>
+                    </div>
+
+                    <button type="submit" class="btn btn-login" id="loginBtn">
+                        Log in
+                    </button>
+
+                    <div class="text-center mt-3">
+                        <p class="mb-0 small">Don't have an account? 
+                            <a href="register.php" class="text-decoration-none" style="color: #1e88e5;">Sign up now</a>
+                        </p>
+                        <p class="mt-2">
+                            <a href="../index.php" class="text-decoration-none small">
+                                <i class="bi bi-arrow-left me-1"></i> Back to Homepage
+                            </a>
+                        </p>
+                    </div>
+                </form>
             </div>
-
-            <button type="submit" class="btn btn-primary w-100 py-2 mb-3">
-                <i class="bi bi-box-arrow-in-right me-2"></i> Sign In
-            </button>
-        </form>
-
-        <div class="text-center mt-3">
-            <p class="mb-2">Don't have an account? 
-                <a href="register.php" class="text-decoration-none">Sign up now</a>
-            </p>
-            <p class="mb-0">
-                <a href="../index.php" class="text-decoration-none">
-                    <i class="bi bi-arrow-left me-1"></i> Back to Homepage
-                </a>
-            </p>
         </div>
     </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-const togglePassword = document.getElementById('togglePassword');
-const passwordInput = document.getElementById('password');
-const eyeIcon = togglePassword.querySelector('i');
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const togglePassword = document.getElementById('togglePassword');
+            const passwordInput = document.getElementById('password');
+            const eyeIcon = togglePassword.querySelector('i');
+            
+            togglePassword.addEventListener('click', function() {
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    eyeIcon.classList.remove('bi-eye');
+                    eyeIcon.classList.add('bi-eye-slash');
+                } else {
+                    passwordInput.type = 'password';
+                    eyeIcon.classList.remove('bi-eye-slash');
+                    eyeIcon.classList.add('bi-eye');
+                }
+                passwordInput.focus();
+            });
 
-togglePassword.addEventListener('click', function() {
-    if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        eyeIcon.classList.remove('bi-eye');
-        eyeIcon.classList.add('bi-eye-slash');
-    } else {
-        passwordInput.type = 'password';
-        eyeIcon.classList.remove('bi-eye-slash');
-        eyeIcon.classList.add('bi-eye');
-    }
-});
+            document.getElementById('loginForm').addEventListener('submit', function(e) {
+                const email = document.querySelector('input[name="email"]').value.trim();
+                const password = document.querySelector('input[name="password"]').value.trim();
+                
+                if (!email || !password) {
+                    e.preventDefault();
+                    alert('Please fill in all required fields');
+                    if (!email) {
+                        document.querySelector('input[name="email"]').focus();
+                    } else {
+                        document.querySelector('input[name="password"]').focus();
+                    }
+                    return;
+                }
 
-document.getElementById('loginForm').addEventListener('submit', function(e) {
-    const email = document.querySelector('input[name="email"]').value;
-    const password = document.querySelector('input[name="password"]').value;
-    
-    if (!email.trim() || !password.trim()) {
-        e.preventDefault();
-        alert('Please fill in all required fields');
-        return;
-    }
+                const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailPattern.test(email)) {
+                    e.preventDefault();
+                    alert('Please enter a valid email address');
+                    document.querySelector('input[name="email"]').focus();
+                    return;
+                }
 
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailPattern.test(email)) {
-        e.preventDefault();
-        alert('Please enter a valid email address');
-        return;
-    }
+                const loginBtn = document.getElementById('loginBtn');
+                const originalText = loginBtn.innerHTML;
+                loginBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Signing in...';
+                loginBtn.disabled = true;
+            });
 
-    const submitBtn = this.querySelector('button[type="submit"]');
-    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Signing in...';
-    submitBtn.disabled = true;
-});
-</script>
+            const emailField = document.querySelector('input[name="email"]');
+            if (emailField && !emailField.value) {
+                emailField.focus();
+            }
+        });
+    </script>
 </body>
 </html>
