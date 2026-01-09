@@ -28,24 +28,26 @@ $donationTotal = mysqli_fetch_assoc(
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/user.css">
-    <link rel="stylesheet" href="../assets/css/admin.css">
+    <link rel="stylesheet" href="../assets/css/admin.css"> 
 </head>
 
 <body>
 
 <!-- GLASS NAVBAR -->
-<div class="container-fluid glass-navbar px-3 pt-3">
-    <nav class="glass shadow d-flex align-items-center justify-content-between px-4 py-3">
-        <span class="fw-bold text-primary fs-5">
-            ⚡ Electripid Admin Dashboard
-        </span>
-        
-        <a href="logout.php" class="btn btn-outline-danger btn-sm rounded-pill px-3">
-            <i class="bi bi-box-arrow-right"></i> Logout
-        </a>
+ <nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-4" href="index.php">
+                <i class="bi bi-lightning-charge-fill me-2"></i>Admin
+            </a>
+
+                        <a href="logout.php" class="btn btn-danger ms-2">
+                            <i class=></i> Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
     </nav>
-</div>
 
 <div class="container mt-4">
     
@@ -56,22 +58,6 @@ $donationTotal = mysqli_fetch_assoc(
                 <i class="bi bi-people-fill fs-3 text-primary"></i>
                 <h6 class="mt-2">Users</h6>
                 <h2><?= htmlspecialchars($userCount) ?></h2>
-            </div>
-        </div>
-        
-        <div class="col-md-3">
-            <div class="glass shadow text-center p-4 h-100">
-                <i class="bi bi-house-door-fill fs-3 text-success"></i>
-                <h6 class="mt-2">Households</h6>
-                <h2><?= htmlspecialchars($householdCount) ?></h2>
-            </div>
-        </div>
-        
-        <div class="col-md-3">
-            <div class="glass shadow text-center p-4 h-100">
-                <i class="bi bi-exclamation-triangle-fill fs-3 text-danger"></i>
-                <h6 class="mt-2">Pending Anomalies</h6>
-                <h2><?= htmlspecialchars($anomalyCount) ?></h2>
             </div>
         </div>
         

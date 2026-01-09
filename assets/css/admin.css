@@ -1,31 +1,32 @@
-/* Background */
+:root {
+    --primary-blue: #1e88e5;
+    --dark-blue: #0d47a1;
+    --light-blue: #e3f2fd;
+    --accent-green: #00c853;
+}
+
 body {
     background: linear-gradient(135deg, #dbeafe, #f0f9ff);
 }
 
-/* Glass effect */
-.glass {
-    background: rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-radius: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+.navbar-brand {
+    color: var(--primary-blue) !important;
 }
 
-/* Sticky navbar spacing */
-.glass-navbar {
-    position: sticky;
-    top: 15px;
-    z-index: 1000;
+.navbar-brand i {
+    color: var(--accent-green);
 }
 
-/* Additional dashboard styles */
-.glass-navbar nav {
-    padding: 0.75rem 1.5rem;
+.hero-section {
+    background: linear-gradient(135deg, var(--light-blue) 0%, white 100%);
+    position: relative;
+    overflow: hidden;
 }
 
-.glass-shadow {
-    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+.btn-primary {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: #ff0000c9;
+  --bs-btn-border-color: #0d6efd;
 }
 
 .table-responsive {
