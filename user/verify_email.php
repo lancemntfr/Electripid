@@ -1,5 +1,5 @@
 <?php
-    require_once '../connect.php';
+    require_once __DIR__ . '/../connect.php';
 
     $code = $_GET['code'] ?? '';
 
@@ -8,12 +8,7 @@
     }
 
     // Check verification code
-    $query = "
-    SELECT user_id FROM VERIFICATION
-    WHERE verification_code = '$code'
-    AND is_verified = 0
-    AND expires_at > NOW()
-    ";
+    $query = "SELECT user_id FROM VERIFICATION WHERE verification_code = '$code' AND is_verified = 0 AND expires_at > NOW()";
 
     $result = executeQuery($query);
 
@@ -25,18 +20,10 @@
     $user_id = $data['user_id'];
 
     // Mark verified
-    executeQuery("
-    UPDATE VERIFICATION
-    SET is_verified = 1
-    WHERE user_id = '$user_id'
-    ");
+    executeQuery("UPDATE VERIFICATION SET is_verified = 1 WHERE user_id = '$user_id'");
 
     // Activate account
-    executeQuery("
-    UPDATE USER
-    SET acc_status = 'active'
-    WHERE user_id = '$user_id'
-    ");
+    executeQuery("UPDATE USER SET acc_status = 'active' WHERE user_id = '$user_id'");
 
     echo "Email verified successfully! You may now <a href='login.php'>log in</a>.";
 ?>
