@@ -87,7 +87,7 @@
                     // Send verification code via PHPMailer
                     sendVerificationEmail($email, $verification_code);
 
-                    header('Location: verify_code.php');
+                    header('Location: verify_email.php');
                     exit;
                 } else {
                     $error_message = 'Registration failed. Please try again later.';
