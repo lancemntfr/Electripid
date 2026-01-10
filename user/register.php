@@ -1,7 +1,8 @@
 <?php
     session_start();
     require_once __DIR__ . '/../connect.php';
-    require_once __DIR__ . '/phpmailer.php';
+    require_once __DIR__ . '/verification/email/phpmailer.php';
+    require_once __DIR__ . '/includes/validation.php';
 
     $error_message = '';
     $success_message = '';
@@ -34,65 +35,47 @@
         $confirm_password = $_POST['confirm_password'] ?? '';
         $terms = isset($_POST['terms']);
 
-        if (empty($fname) || empty($lname) || empty($email) || empty($password) || empty($confirm_password)) {
-            $error_message = 'Please fill in all required fields.';
-        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $error_message = 'Please enter a valid email address.';
-        } elseif (strlen($password) < 6) {
-            $error_message = 'Password must be at least 6 characters long.';
-        } elseif ($password !== $confirm_password) {
-            $error_message = 'Passwords do not match.';
-        } elseif (!$terms) {
-            $error_message = 'You must agree to the Terms of Service and Privacy Policy.';
-        } elseif ($provider_id <= 0) {
-            $error_message = 'Please select an electricity provider.';
+        // Validate signup data using modular validation function
+        $validation = validateSignupData([
+            'fname' => $fname,
+            'lname' => $lname,
+            'email' => $email,
+            'password' => $password,
+            'confirm_password' => $confirm_password,
+            'city' => $city,
+            'barangay' => $barangay,
+            'provider_id' => $provider_id,
+            'terms' => $terms
+        ], $conn);
+
+        if (!$validation['valid']) {
+            $error_message = $validation['error'];
         } else {
+            // All validation passed - proceed with registration
+            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-            $email = mysqli_real_escape_string($conn, $email);
-            $check_query = "SELECT user_id FROM USER WHERE email = '$email'";
-            $check_result = executeQuery($check_query);
+            // Generate 6-digit verification code
+            $verification_code = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+            $expires_at = date("Y-m-d H:i:s", strtotime("+15 minutes"));
 
-            if ($check_result && mysqli_num_rows($check_result) > 0) {
-                $error_message = 'Email address is already registered. Please use a different email or <a href="login.php">login here</a>.';
-            } else {
+            $_SESSION['pending_registration'] = [
+                'fname' => $fname,
+                'lname' => $lname,
+                'email' => $email,
+                'cp_number' => $cp_number,
+                'city' => $city,
+                'barangay' => $barangay,
+                'provider_id' => $provider_id,
+                'password' => $hashed_password,
+                'verification_code' => $verification_code,
+                'expires_at' => $expires_at
+            ];
 
-                $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+            $type = 'verification';
+            sendVerificationEmail($email, $verification_code, $type);
 
-                $fname = mysqli_real_escape_string($conn, $fname);
-                $lname = mysqli_real_escape_string($conn, $lname);
-                $city = mysqli_real_escape_string($conn, $city);
-                $barangay = mysqli_real_escape_string($conn, $barangay);
-                $provider_id = mysqli_real_escape_string($conn, $provider_id);
-
-                $insert_user_query = "INSERT INTO USER (fname, lname, email, cp_number, city, barangay, password, role, acc_status) VALUES ('$fname', '$lname', '$email', '$cp_number', '$city', '$barangay', '$hashed_password', 'user', 'inactive')";
-                $user_result = executeQuery($insert_user_query);
-
-                if ($user_result) {
-                    $user_id = mysqli_insert_id($conn);
-
-                    $insert_household_query = "INSERT INTO HOUSEHOLD (user_id, provider_id) VALUES ('$user_id', '$provider_id')";
-                    executeQuery($insert_household_query);
-
-                    // Generate 6-digit verification code
-                    $verification_code = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
-                    $expires_at = date("Y-m-d H:i:s", strtotime("+15 minutes"));
-
-                    // Save verification record
-                    $verification_query = "INSERT INTO VERIFICATION (user_id, verification_type, verification_code, expires_at) VALUES ('$user_id', 'email', '$verification_code', '$expires_at')";
-                    executeQuery($verification_query);
-
-                    // Store pending user_id in session
-                    $_SESSION['pending_user_id'] = $user_id;
-
-                    // Send verification code via PHPMailer
-                    sendVerificationEmail($email, $verification_code);
-
-                    header('Location: verify_email.php');
-                    exit;
-                } else {
-                    $error_message = 'Registration failed. Please try again later.';
-                }
-            }
+            header('Location: verification/email/verify_email.php');
+            exit;
         }
     }
 ?>
@@ -287,13 +270,13 @@
                         <div class="mb-compact">
                             <label class="form-label">Password <span class="text-danger">*</span></label>
                             <div class="position-relative">
-                                <input type="password" class="form-control" name="password"  id="password" required minlength="6" placeholder="Password" onkeyup="checkPasswordStrength()" autocomplete="new-password">
+                                <input type="password" class="form-control" name="password"  id="password" required minlength="8" placeholder="Password" onkeyup="checkPasswordStrength()" autocomplete="new-password">
                                 <button type="button" class="eye-toggle position-absolute text-secondary z-3 border-0 bg-transparent" id="togglePassword" style="right: 10px; top: 50%; transform: translateY(-50%);">
                                     <i class="bi bi-eye"></i>
                                 </button>
                             </div>
                             <div class="small text-secondary mt-1" style="font-size: 0.75rem;">
-                                <div id="lengthReq"><i class="bi bi-circle"></i> 6+ characters</div>
+                                <div id="lengthReq"><i class="bi bi-circle"></i> 8+ characters</div>
                                 <div id="caseReq"><i class="bi bi-circle"></i> Upper & lowercase</div>
                                 <div id="numberReq"><i class="bi bi-circle"></i> One number</div>
                             </div>
@@ -407,11 +390,11 @@
             const caseReq = document.getElementById('caseReq');
             const numberReq = document.getElementById('numberReq');
             
-            const hasLength = password.length >= 6;
+            const hasLength = password.length >= 8;
             const hasCase = /([a-z].*[A-Z])|([A-Z].*[a-z])/.test(password);
             const hasNumber = /[0-9]/.test(password);
             
-            lengthReq.innerHTML = `<i class="bi ${hasLength ? 'bi-check-circle text-success' : 'bi-circle text-secondary'}"></i> 6+ characters`;
+            lengthReq.innerHTML = `<i class="bi ${hasLength ? 'bi-check-circle text-success' : 'bi-circle text-secondary'}"></i> 8+ characters`;
             caseReq.innerHTML = `<i class="bi ${hasCase ? 'bi-check-circle text-success' : 'bi-circle text-secondary'}"></i> Upper & lowercase`;
             numberReq.innerHTML = `<i class="bi ${hasNumber ? 'bi-check-circle text-success' : 'bi-circle text-secondary'}"></i> One number`;
         }
@@ -447,9 +430,9 @@
                 return;
             }
             
-            if (password.length < 6) {
+            if (password.length < 8) {
                 e.preventDefault();
-                alert('Password must be at least 6 characters long');
+                alert('Password must be at least 8 characters long');
                 document.getElementById('password').focus();
                 return;
             }

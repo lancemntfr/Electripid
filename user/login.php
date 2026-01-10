@@ -167,7 +167,7 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
                             <input type="checkbox" class="form-check-input" id="remember" name="remember">
                             <label class="form-check-label small" for="remember">Remember me</label>
                         </div>
-                        <a href="forgot_password.php" class="text-decoration-none small" style="color: #1e88e5;">
+                        <a href="verification/reset_pass/forgot_password.php" class="text-decoration-none small" style="color: #1e88e5;">
                             Forgot password?
                         </a>
                     </div>
