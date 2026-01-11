@@ -2,7 +2,7 @@
     session_start();
     header('Content-Type: application/json');
 
-    require_once '../connect.php';
+    require_once __DIR__ . '/../../connect.php';
 
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         echo json_encode(['success' => false, 'error' => 'Invalid request method']);

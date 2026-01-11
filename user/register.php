@@ -7,6 +7,12 @@
     $error_message = '';
     $success_message = '';
 
+    // Redirect if already logged in
+    if (isset($_SESSION['user_id'])) {
+        header('Location: dashboard.php');
+        exit;
+    }
+
     // Get electricity providers
     $providers_result = executeQuery("SELECT provider_id, provider_name FROM electricity_provider ORDER BY provider_name ASC");
     $providers = [];
@@ -14,12 +20,6 @@
         while ($row = mysqli_fetch_assoc($providers_result)) {
             $providers[] = $row;
         }
-    }
-
-    // Redirect if already logged in
-    if (isset($_SESSION['user_id'])) {
-        header('Location: dashboard.php');
-        exit;
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {

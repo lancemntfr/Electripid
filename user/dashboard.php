@@ -73,7 +73,7 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
                 </a>
               </li>
               <li>
-                <a class="dropdown-item" href="#">
+                <a class="dropdown-item" href="settings.php">
                   <i class="bi bi-gear"></i> Settings
                 </a>
               </li>
@@ -533,7 +533,7 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
     async function saveSettings() {
       const budget = parseFloat(document.getElementById('monthlyBudget').innerText.replace('₱', '').replace(',', ''));
       try {
-        const response = await fetch('save_settings.php', {
+        const response = await fetch('settings/save_settings.php', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -936,7 +936,7 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
       }
 
       try {
-        const response = await fetch('save_appliance.php', {
+        const response = await fetch('appliances/save_appliance.php', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -970,7 +970,7 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
     async function removeApplianceDB(applianceId) {
       if (confirm('Are you sure you want to remove this appliance?')) {
         try {
-          const response = await fetch('remove_appliance.php', {
+          const response = await fetch('appliances/remove_appliance.php', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
