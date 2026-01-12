@@ -35,7 +35,7 @@
         $confirm_password = $_POST['confirm_password'] ?? '';
         $terms = isset($_POST['terms']);
 
-        // Validate signup data using modular validation function
+        // Validate signup data
         $validation = validateSignupData([
             'fname' => $fname,
             'lname' => $lname,
@@ -51,13 +51,13 @@
         if (!$validation['valid']) {
             $error_message = $validation['error'];
         } else {
-            // All validation passed - proceed with registration
             $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
             // Generate 6-digit verification code
             $verification_code = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
             $expires_at = date("Y-m-d H:i:s", strtotime("+15 minutes"));
 
+            // Save in session
             $_SESSION['pending_registration'] = [
                 'fname' => $fname,
                 'lname' => $lname,
@@ -71,6 +71,12 @@
                 'expires_at' => $expires_at
             ];
 
+            // Insert verification code in DB with NULL user_id
+            $stmt = $conn->prepare("INSERT INTO VERIFICATION (user_id, verification_type, verification_code, expires_at) VALUES (NULL, 'email', ?, ?)");
+            $stmt->bind_param("ss", $verification_code, $expires_at);
+            $stmt->execute();
+
+            // Send email
             $type = 'verification';
             sendVerificationEmail($email, $verification_code, $type);
 

@@ -13,52 +13,61 @@
     $success = '';
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $pending_data = $_SESSION['pending_registration'];
 
-        // Check if user clicked verify
+        // Verify button clicked
         if (isset($_POST['verify'])) {
             $code = trim($_POST['code']);
 
             if (empty($code)) {
                 $error = "Please enter the verification code.";
             } else {
-                // Check if code matches and is not expired
-                if ($code === $pending_data['verification_code'] && time() < $pending_data['expires_at']) {
-                    
-                    $fname = mysqli_real_escape_string($conn, $pending_data['fname']);
-                    $lname = mysqli_real_escape_string($conn, $pending_data['lname']);
-                    $email = mysqli_real_escape_string($conn, $pending_data['email']);
-                    $cp_number = mysqli_real_escape_string($conn, $pending_data['cp_number']);
-                    $city = mysqli_real_escape_string($conn, $pending_data['city']);
-                    $barangay = mysqli_real_escape_string($conn, $pending_data['barangay']);
-                    $password = $pending_data['password']; // Already hashed
-                    $provider_id = intval($pending_data['provider_id']);
+                // Check code in VERIFICATION table
+                $stmt = $conn->prepare("SELECT verification_id, expires_at FROM VERIFICATION WHERE verification_code=? AND verification_type='email' AND is_verified=0");
+                $stmt->bind_param("s", $code);
+                $stmt->execute();
+                $result = $stmt->get_result();
 
-                    $insert_user_query = "INSERT INTO USER (fname, lname, email, cp_number, city, barangay, password, role, acc_status) VALUES ('$fname', '$lname', '$email', '$cp_number', '$city', '$barangay', '$password', 'user', 'active')";
-                    $user_result = executeQuery($insert_user_query);
+                if ($result->num_rows === 1) {
+                    $row = $result->fetch_assoc();
+                    if (strtotime($row['expires_at']) >= time()) {
+                        // Valid → insert user
+                        $pending_data = $_SESSION['pending_registration'];
 
-                    if ($user_result) {
-                        $user_id = mysqli_insert_id($conn);
+                        $stmt_insert = $conn->prepare("INSERT INTO USER (fname, lname, email, cp_number, city, barangay, password, role, acc_status) VALUES (?, ?, ?, ?, ?, ?, ?, 'user', 'active')");
+                        $stmt_insert->bind_param(
+                            "sssssss",
+                            $pending_data['fname'],
+                            $pending_data['lname'],
+                            $pending_data['email'],
+                            $pending_data['cp_number'],
+                            $pending_data['city'],
+                            $pending_data['barangay'],
+                            $pending_data['password']
+                        );
+                        $stmt_insert->execute();
+                        $user_id = $conn->insert_id;
 
-                        // Create household
-                        $insert_household_query = "INSERT INTO HOUSEHOLD (user_id, provider_id) VALUES ('$user_id', '$provider_id')";
-                        executeQuery($insert_household_query);
+                        // Update VERIFICATION table
+                        $stmt_update = $conn->prepare("UPDATE VERIFICATION SET user_id=?, is_verified=1 WHERE verification_id=?");
+                        $stmt_update->bind_param("ii", $user_id, $row['verification_id']);
+                        $stmt_update->execute();
 
-                        // Clear pending registration session
+                        // Clear session
                         unset($_SESSION['pending_registration']);
 
                         header("Location: ../../login.php?verified=1");
                         exit;
+
                     } else {
-                        $error = "Account creation failed. Please try again.";
+                        $error = "Verification code expired.";
                     }
                 } else {
-                    $error = "Invalid or expired code.";
+                    $error = "Invalid verification code.";
                 }
             }
         }
 
-        // Check if user clicked resend
+        // Resend button clicked
         if (isset($_POST['resend'])) {
             $result = resendVerificationCode();
             if ($result['success']) {
@@ -68,11 +77,14 @@
             }
         }
     }
-    
-    // Refresh pending_data at the end to ensure we have latest data
-    $pending_data = $_SESSION['pending_registration'];
 ?>
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Verify Email</title>
+</head>
+<body>
 <h2>Verify Your Email</h2>
 
 <?php if(!empty($error)): ?>
@@ -92,3 +104,5 @@
 <form method="POST" style="margin-top:10px;">
     <button type="submit" name="resend">Resend Code</button>
 </form>
+</body>
+</html>
