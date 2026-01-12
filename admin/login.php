@@ -1,15 +1,15 @@
 <?php
+ini_set('session.cookie_path', '/');
 session_start();
+
+require_once '../connect.php';
 
 $error_message = '';
 
 if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') {
-    header('Location: dashboard.php');
+    header('Location: /admin/dashboard.php');
     exit;
 }
-
-$ADMIN_EMAIL = "admin@electripid.com";
-$ADMIN_PASSWORD = "admin123";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
@@ -17,21 +17,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($email) || empty($password)) {
         $error_message = 'Please fill in all required fields.';
-    } elseif ($email === $ADMIN_EMAIL && $password === $ADMIN_PASSWORD) {
-
-        $_SESSION['user_id'] = 0;
-        $_SESSION['fname'] = 'System';
-        $_SESSION['lname'] = 'Admin';
-        $_SESSION['email'] = $ADMIN_EMAIL;
-        $_SESSION['role'] = 'admin';
-
-        header('Location: dashboard.php');
-        exit;
     } else {
+
+        $stmt = $conn->prepare(
+            "SELECT * FROM USER 
+             WHERE email = ? 
+             AND role = 'admin' 
+             AND acc_status = 'active'"
+        );
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($admin = $result->fetch_assoc()) {
+
+            if (password_verify($password, $admin['password'])) {
+
+                session_regenerate_id(true);
+
+                $_SESSION['user_id'] = $admin['id'] ?? 0;
+                $_SESSION['fname']   = $admin['fname'];
+                $_SESSION['lname']   = $admin['lname'];
+                $_SESSION['email']   = $admin['email'];
+                $_SESSION['role']    = 'admin';
+
+                header('Location: /admin/dashboard.php');
+                exit;
+            }
+        }
+
         $error_message = 'Invalid admin credentials.';
     }
 }
-?>
+
+
 
 <!DOCTYPE html>
 <html lang="en">
