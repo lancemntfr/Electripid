@@ -227,7 +227,7 @@ body {
 }
 
 body {
-    background-color: var(--light-bg);
+    background: linear-gradient(135deg, #1e88e5 0%, #0d47a1 100%);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
@@ -388,7 +388,7 @@ body {
 
 .chatbot-btn {
     bottom: 40px;
-    background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%);
+    background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
 }
 
 /* Modal Styles */
