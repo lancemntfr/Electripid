@@ -1,63 +1,69 @@
 <?php
-require_once __DIR__ . '/../../../connect.php';
-session_start();
+    require_once __DIR__ . '/../../../connect.php';
+    session_start();
 
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['pending_phone'])) {
-    header('Location: ../../settings.php');
-    exit;
-}
-
-$user_id = $_SESSION['user_id'];
-$phone = $_SESSION['pending_phone'];
-$error = '';
-$success = '';
-
-$email_check = $conn->prepare("SELECT verification_id FROM VERIFICATION WHERE user_id=? AND verification_type='email' AND is_verified=1 LIMIT 1");
-$email_check->bind_param("i", $user_id);
-$email_check->execute();
-$email_result = $email_check->get_result();
-
-if ($email_result->num_rows === 0) {
-    header('Location: ../../settings.php?error=email_not_verified');
-    exit;
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['verify'])) {
-        $code = trim($_POST['code'] ?? '');
-
-        if (empty($code)) {
-            $error = "Please enter the verification code.";
-        } else {
-            $stmt = $conn->prepare("SELECT verification_id FROM VERIFICATION WHERE user_id=? AND verification_code=? AND verification_type='sms' AND is_verified=0 AND expires_at>NOW() ORDER BY created_at DESC LIMIT 1");
-            $stmt->bind_param("is", $user_id, $code);
-            $stmt->execute();
-            $result = $stmt->get_result();
-
-            if ($result->num_rows === 0) {
-                $error = "Invalid or expired OTP.";
-            } else {
-                $verification_row = $result->fetch_assoc();
-                $verification_id = $verification_row['verification_id'];
-                
-                // Mark SMS verification as verified (is_verified=1)
-                $update_verification = $conn->prepare("UPDATE VERIFICATION SET is_verified=1 WHERE verification_id=?");
-                $update_verification->bind_param("i", $verification_id);
-                $update_verification->execute();
-
-                // Save phone to database (with +63 country code)
-                $update_stmt = $conn->prepare("UPDATE USER SET cp_number=? WHERE user_id=?");
-                $update_stmt->bind_param("si", $phone, $user_id);
-                $update_stmt->execute();
-
-                unset($_SESSION['pending_phone']);
-                header("Location: ../../settings.php?verified=1");
-                exit;
-            }
-        }
+    if (!isset($_SESSION['user_id']) || !isset($_SESSION['pending_phone'])) {
+        header('Location: ../../settings.php');
+        exit;
     }
 
-}
+    $user_id = $_SESSION['user_id'];
+    $phone = $_SESSION['pending_phone'];
+    $error = '';
+    $success = '';
+
+    // Check if user's email is verified (required to access settings)
+    $email_check = $conn->prepare("SELECT verification_id FROM VERIFICATION WHERE user_id=? AND verification_type='email' AND is_verified=1 LIMIT 1");
+    $email_check->bind_param("i", $user_id);
+    $email_check->execute();
+    $email_result = $email_check->get_result();
+
+    if ($email_result->num_rows === 0) {
+        header('Location: ../../settings.php?error=email_not_verified');
+        exit;
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        if (isset($_POST['verify'])) {
+            $code = trim($_POST['code'] ?? '');
+
+            if (empty($code)) {
+                $error = "Please enter the verification code.";
+            } else {
+                // Check for unverified SMS OTP (is_verified=0 for SMS verification)
+                $stmt = $conn->prepare("
+                    SELECT verification_id FROM VERIFICATION
+                    WHERE user_id=? AND verification_code=? AND verification_type='sms' AND is_verified=0 AND expires_at>NOW()
+                    ORDER BY created_at DESC LIMIT 1
+                ");
+                $stmt->bind_param("is", $user_id, $code);
+                $stmt->execute();
+                $result = $stmt->get_result();
+
+                if ($result->num_rows === 0) {
+                    $error = "Invalid or expired OTP.";
+                } else {
+                    $verification_row = $result->fetch_assoc();
+                    $verification_id = $verification_row['verification_id'];
+                    
+                    // Mark SMS verification as verified (is_verified=1)
+                    $update_verification = $conn->prepare("UPDATE VERIFICATION SET is_verified=1 WHERE verification_id=?");
+                    $update_verification->bind_param("i", $verification_id);
+                    $update_verification->execute();
+
+                    // Save phone to database (with +63 country code)
+                    $update_stmt = $conn->prepare("UPDATE USER SET cp_number=? WHERE user_id=?");
+                    $update_stmt->bind_param("si", $phone, $user_id);
+                    $update_stmt->execute();
+
+                    unset($_SESSION['pending_phone']);
+                    header("Location: ../../settings.php?verified=1");
+                    exit;
+                }
+            }
+        }
+
+    }
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -152,7 +158,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         document.addEventListener('DOMContentLoaded', function() {
             const codeInput = document.getElementById('code');
             
-            codeInput.addEventListener('input', function(e) {       // Auto-format and validate OTP input
+            // Auto-format and validate OTP input
+            codeInput.addEventListener('input', function(e) {
                 this.value = this.value.replace(/[^0-9]/g, '');
             });
 
