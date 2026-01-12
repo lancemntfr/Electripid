@@ -15,13 +15,30 @@ $userId = $_SESSION['user_id'];
 
 // Load appliances from database
 $appliances = [];
+$currentProvider = 'Meralco';
+$currentRate = 13.01;
 $user_id = mysqli_real_escape_string($conn, $userId);
-$household_query = "SELECT household_id FROM HOUSEHOLD WHERE user_id = '$user_id'";
+$household_query = "SELECT h.household_id, p.provider_name FROM HOUSEHOLD h 
+                    LEFT JOIN ELECTRICITY_PROVIDER p ON h.provider_id = p.provider_id 
+                    WHERE h.user_id = '$user_id'";
 $household_result = mysqli_query($conn, $household_query);
 
 if ($household_result && mysqli_num_rows($household_result) > 0) {
   $household_row = mysqli_fetch_assoc($household_result);
   $household_id = mysqli_real_escape_string($conn, $household_row['household_id']);
+  
+  // Get provider and set rate
+  if (!empty($household_row['provider_name'])) {
+    $currentProvider = $household_row['provider_name'];
+    // Set rate based on provider
+    if ($currentProvider == 'Meralco') {
+      $currentRate = 13.01;
+    } elseif ($currentProvider == 'BATELEC I' || $currentProvider == 'Batelec 1') {
+      $currentRate = 10.08;
+    } elseif ($currentProvider == 'BATELEC II' || $currentProvider == 'Batelec 2') {
+      $currentRate = 9.90;
+    }
+  }
 
   $appliance_query = "SELECT * FROM APPLIANCE WHERE household_id = '$household_id'";
   $appliance_result = mysqli_query($conn, $appliance_query);
@@ -48,57 +65,48 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
 
 <body>
   <!-- Navbar -->
-  <div class="container-fluid px-5 mt-4">
-    <nav class="navbar navbar-expand-lg navbar-light bg-white">
-      <div class="w-100 d-flex justify-content-between align-items-center">
-        <a class="navbar-brand ms-3" href="#">
-          <i class="bi bi-lightning-charge-fill me-2"></i>Electripid
-        </a>
-        <div class="d-flex align-items-center">
-          <!-- Notifications -->
-          <button class="nav-icon-btn position-relative" type="button">
-            <i class="bi bi-bell"></i>
-            <span class="notification-badge">3</span>
+  <nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm" style="border-radius: 0 !important;">
+    <div class="container">
+      <a class="navbar-brand fw-bold fs-4" href="#" style="color: #1E88E5 !important;">
+        <i class="bi bi-lightning-charge-fill me-2" style="color: #00bfa5;"></i>Electripid
+      </a>
+      <div class="d-flex align-items-center">
+        <!-- Notifications -->
+        <button class="nav-icon-btn position-relative me-3" type="button" style="font-size: 2rem;">
+          <i class="bi bi-bell"></i>
+        </button>
+        <!-- User Profile -->
+        <div class="dropdown ms-2">
+          <button class="btn p-0 d-flex align-items-center" type="button" data-bs-toggle="dropdown">
+            <i class="bi bi-person-circle" style="font-size: 2rem; color: var(--secondary-color);"></i>
           </button>
-          <!-- User Profile -->
-          <div class="dropdown ms-2">
-            <button class="btn p-0 d-flex align-items-center" type="button" data-bs-toggle="dropdown">
-              <div class="user-avatar me-2"><?php echo $userInitial; ?></div>
-              <i class="bi bi-chevron-down"></i>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end">
-              <li>
-                <a class="dropdown-item" href="#">
-                  <i class="bi bi-person"></i> My Profile
-                </a>
-              </li>
-              <li>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li>
+              <a class="dropdown-item" href="#">
+                <i class="bi bi-person"></i> My Profile
+              </a>
+            </li>
+            <li>
                 <a class="dropdown-item" href="settings.php">
-                  <i class="bi bi-gear"></i> Settings
-                </a>
-              </li>
-              <li>
-                <a class="dropdown-item" href="#">
-                  <i class="bi bi-question-circle"></i> Help & Support
-                </a>
-              </li>
-              <li>
-                <hr class="dropdown-divider">
-              </li>
-              <li>
-                <a class="dropdown-item text-danger" href="logout.php">
-                  <i class="bi bi-box-arrow-right"></i> Logout
-                </a>
-              </li>
-            </ul>
-          </div>
+                  <i class="bi bi-gear-fill"></i> Settings
+              </a>
+            </li>
+            <li>
+              <hr class="dropdown-divider">
+            </li>
+            <li>
+              <a class="dropdown-item text-danger" href="logout.php">
+                <i class="bi bi-box-arrow-right"></i> Logout
+              </a>
+            </li>
+          </ul>
         </div>
       </div>
-    </nav>
-  </div>
+    </div>
+  </nav>
 
   <!-- Main Content -->
-  <div class="container px-5 py-4">
+  <div class="container px-5 py-4 mt-4">
     <!-- Info Cards -->
     <div class="row g-4 mb-4">
       <div class="col-lg-3 col-md-6">
@@ -107,7 +115,7 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
             <i class="bi bi-lightning-charge"></i>
           </div>
           <h6 class="text-muted mb-1">Electricity Provider</h6>
-          <h4 class="mb-0" id="providerDisplay">Meralco</h4>
+          <h4 class="mb-0" id="providerDisplay"><?php echo htmlspecialchars($currentProvider); ?></h4>
         </div>
       </div>
       <div class="col-lg-3 col-md-6">
@@ -174,7 +182,7 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
                 <input type="text" id="deviceName" class="form-control form-control-sm" placeholder="Device Name">
               </div>
               <div class="col-6 col-md-3">
-                <input type="number" id="devicePower" class="form-control form-control-sm" placeholder="Power (W)">
+                <input type="number" id="devicePower" class="form-control form-control-sm" placeholder="Power (kWh)">
               </div>
               <div class="col-6 col-md-3">
                 <input type="number" id="deviceHours" class="form-control form-control-sm" placeholder="Hours/Day">
@@ -193,7 +201,7 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
           </div>
 
           <!-- Appliance List -->
-          <div id="applianceDisplayList" class="flex-grow-1">
+          <div id="applianceDisplayList" class="flex-grow-1" style="max-height: 120px; overflow-y: auto;">
             <div class="text-center text-muted small py-3">
               No appliances tracked yet. Add one to get started!
             </div>
@@ -213,7 +221,6 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
             <div class="mb-3">
               <div class="small text-secondary mb-1">Monthly Cost</div>
               <div class="h4 mb-0">₱<span id="monthlyCost">0</span></div>
-              <div class="small text-muted">Yearly: ₱<span id="yearlyCost">0</span></div>
             </div>
           </div>
         </div>
@@ -234,7 +241,7 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
       <div class="col-lg-4">
         <div class="chart-container h-100 d-flex flex-column">
           <h5 class="mb-3"><i class="bi bi-lightbulb me-2"></i>Energy Tips & Recommendations</h5>
-          <div class="mt-3 flex-grow-1">
+          <div id="energyTipsContent" class="mt-3 flex-grow-1" style="display: none;">
             <div class="alert alert-info mb-3">
               <i class="bi bi-info-circle me-2"></i>
               <strong>Tip:</strong> Use LED bulbs to save up to 75% on lighting costs
@@ -263,21 +270,6 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
       <div class="modal-body p-4">
         <p style="color: #64748b; margin-bottom: 20px;">Help us improve Electripid! Your donation will fund new features, better forecasting, and enhanced user experience.</p>
 
-        <div class="donation-amounts row g-2 mb-4">
-          <div class="col-6 col-md-3">
-            <button class="donation-btn w-100 p-3 fw-semibold" onclick="selectAmount(50, this)">₱50</button>
-          </div>
-          <div class="col-6 col-md-3">
-            <button class="donation-btn w-100 p-3 fw-semibold" onclick="selectAmount(100, this)">₱100</button>
-          </div>
-          <div class="col-6 col-md-3">
-            <button class="donation-btn w-100 p-3 fw-semibold" onclick="selectAmount(250, this)">₱250</button>
-          </div>
-          <div class="col-6 col-md-3">
-            <button class="donation-btn w-100 p-3 fw-semibold" onclick="selectAmount(500, this)">₱500</button>
-          </div>
-        </div>
-
         <div class="mb-4">
           <label class="small text-secondary mb-2 d-block">Custom Amount (₱)</label>
           <input type="number" id="customAmount" class="form-control" placeholder="Enter custom amount" min="10">
@@ -292,15 +284,15 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
     </div>
   </div>
 
-  <!-- Chatbot Modal -->
-  <div id="chatbotModal" class="modal-overlay position-fixed top-0 start-0 end-0 bottom-0 align-items-center justify-content-center" style="display: none; z-index: 1001; background: rgba(0,0,0,0.5);">
-    <div class="chatbot-container bg-white rounded-4 d-flex flex-column shadow-lg" style="width: 90%; max-width: 500px; height: 90vh; max-height: 700px;">
+  <!-- Chatbot Widget -->
+  <div id="chatbotWidget" class="chatbot-widget" style="display: none;">
+    <div class="chatbot-container bg-white d-flex flex-column shadow-lg" style="border-radius: 16px 16px 0 0;">
 
       <!-- Header -->
-      <div class="chatbot-header d-flex justify-content-between align-items-center p-4 text-white rounded-top" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+      <div class="chatbot-header d-flex justify-content-between align-items-center p-3 text-white rounded-top" style="background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%);">
         <div>
-          <h3 class="mb-0">⚡ Electripid AI Assistant</h3>
-          <p class="mb-0 small opacity-75">Powered by Ollama</p>
+          <h5 class="mb-0"><span style="color: #00c853;">⚡</span> Electripid AI Assistant</h5>
+          <p class="mb-0 small opacity-75" style="font-size: 0.7rem;">Powered by Ollama</p>
         </div>
         <div class="d-flex gap-2">
           <button class="btn btn-sm btn-light opacity-75" onclick="clearChatHistory()" title="Clear chat">
@@ -313,10 +305,10 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
       </div>
 
       <!-- Messages Area -->
-      <div class="chatbot-messages flex-fill p-4 overflow-auto" id="chatbotMessages" style="background: #f8f9fa;">
-        <div class="bot-message d-flex gap-3 mb-4">
-          <div class="message-avatar rounded-circle d-flex align-items-center justify-content-center" style="flex-shrink: 0; width: 40px; height: 40px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; font-size: 1.2rem;">🤖</div>
-          <div class="message-content bg-white p-3 rounded-3 small shadow-sm">
+      <div class="chatbot-messages flex-fill p-3 overflow-auto" id="chatbotMessages" style="background: #f8f9fa;">
+        <div class="bot-message d-flex gap-2 mb-3">
+          <div class="message-avatar rounded-circle d-flex align-items-center justify-content-center" style="flex-shrink: 0; width: 30px; height: 30px; background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%); color: white; font-size: 0.9rem;">🤖</div>
+          <div class="message-content bg-white p-2 rounded-3 small shadow-sm">
             Hello! I'm your Electripid assistant powered by AI. I can help you with:
             <br>• Energy consumption analysis
             <br>• Money-saving tips
@@ -328,18 +320,18 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
       </div>
 
       <!-- Input Area -->
-      <div class="chatbot-input d-flex gap-3 p-4 bg-white border-top rounded-bottom">
+      <div class="chatbot-input d-flex gap-2 p-3 bg-white border-top rounded-bottom">
         <input
           type="text"
           id="chatInput"
           class="form-control flex-fill"
           placeholder="Ask me anything about energy..."
           onkeypress="handleChatKeypress(event)"
-          style="border-radius: 25px; border: 2px solid #e9ecef;">
+          style="border-radius: 20px; border: 2px solid #e9ecef; font-size: 0.85rem;">
         <button
           class="btn text-white rounded-circle d-flex align-items-center justify-content-center"
           onclick="sendMessage()"
-          style="width: 45px; height: 45px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+          style="width: 38px; height: 38px; background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%); border: none;">
           <i class="bi bi-send-fill"></i>
         </button>
       </div>
@@ -398,21 +390,50 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
       }
     }
 
+    /* Chatbot Widget Styles */
+    .chatbot-widget {
+      position: fixed;
+      bottom: 0;
+      right: 100px;
+      width: 350px;
+      height: 500px;
+      max-height: 80vh;
+      z-index: 1000;
+      animation: slideUp 0.3s ease-out;
+    }
+
+    .chatbot-widget .chatbot-container {
+      width: 100%;
+      height: 100%;
+      max-height: 500px;
+    }
+
+    .chatbot-widget .chatbot-messages {
+      max-height: 350px;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
     /* Mobile Responsive */
     @media (max-width: 576px) {
-      .chatbot-container {
-        width: 100% !important;
-        height: 100vh !important;
-        max-height: 100vh !important;
-        border-radius: 0 !important;
+      .chatbot-widget {
+        width: calc(100% - 20px) !important;
+        right: 10px !important;
+        bottom: 0 !important;
+        height: 60vh !important;
       }
 
-      .chatbot-header {
-        border-radius: 0 !important;
-      }
-
-      .chatbot-input {
-        border-radius: 0 !important;
+      .chatbot-widget .chatbot-container {
+        height: 100% !important;
       }
 
       .message-content {
@@ -434,7 +455,8 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
 
   <script>
     let appliances = <?php echo json_encode($appliances); ?>;
-    let currentRate = 12.00;
+    let currentRate = <?php echo $currentRate; ?>;
+    let currentProvider = <?php echo json_encode($currentProvider); ?>;
     let forecastChart = null;
     const WEATHER_API_KEY = 'a4ad5de980d109abed0fec591eefd391';
     let currentLocation = 'Batangas';
@@ -443,24 +465,19 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
 
     const USD_RATE = 59; // 1 USD ≈ 59 PHP
 
-    const providerByLocation = {
-      "Batangas City": {
-        provider: "Meralco",
-        rate: 11.5
-      },
-      "Lipa": {
-        provider: "Meralco",
-        rate: 11.8
-      },
-      "Tanauan": {
-        provider: "BATELEC I",
-        rate: 12.1
-      },
-      "Sto Tomas": {
-        provider: "Meralco",
-        rate: 13.2
-      }
+    // Provider rates mapping
+    const providerRates = {
+      "Meralco": 13.01,
+      "BATELEC I": 10.08,
+      "Batelec 1": 10.08,
+      "BATELEC II": 9.90,
+      "Batelec 2": 9.90
     };
+
+    // Update rate when provider changes
+    if (currentProvider && providerRates[currentProvider]) {
+      currentRate = providerRates[currentProvider];
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
       updateAllMetrics();
@@ -494,7 +511,31 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
       document.getElementById('weatherWind').textContent = current.wind.speed;
 
       const iconCode = current.weather[0].icon;
-      document.querySelector('#weatherIcon img').src = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+      const weatherIcon = document.querySelector('#weatherIcon img');
+      weatherIcon.src = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+      
+      // Add color filter based on weather condition
+      const condition = current.weather[0].main.toLowerCase();
+      const description = current.weather[0].description.toLowerCase();
+      let filterColor = '';
+      
+      if (condition.includes('cloud') || description.includes('cloud')) {
+        filterColor = 'brightness(0) saturate(100%) invert(40%) sepia(100%) saturate(2000%) hue-rotate(200deg) brightness(0.9)'; // Blue
+      } else if (condition.includes('rain') || description.includes('rain') || description.includes('drizzle')) {
+        filterColor = 'brightness(0) saturate(100%) invert(40%) sepia(100%) saturate(2000%) hue-rotate(200deg) brightness(0.8)'; // Darker blue
+      } else if (condition.includes('clear') || description.includes('clear') || description.includes('sun')) {
+        filterColor = 'brightness(0) saturate(100%) invert(80%) sepia(100%) saturate(2000%) hue-rotate(0deg) brightness(1.1)'; // Yellow/Orange
+      } else if (condition.includes('snow')) {
+        filterColor = 'brightness(0) saturate(100%) invert(100%)'; // White
+      } else if (condition.includes('thunder') || description.includes('thunder')) {
+        filterColor = 'brightness(0) saturate(100%) invert(20%) sepia(100%) saturate(2000%) hue-rotate(250deg)'; // Purple
+      } else if (condition.includes('mist') || condition.includes('fog') || description.includes('mist') || description.includes('fog')) {
+        filterColor = 'brightness(0) saturate(100%) invert(90%)'; // Light gray
+      }
+      
+      if (filterColor) {
+        weatherIcon.style.filter = filterColor;
+      }
     }
 
     function updateWeatherForecast(data) {
@@ -518,12 +559,31 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
         const item = forecastByDay[day];
         const iconCode = item.weather[0].icon;
         const temp = Math.round(item.main.temp);
+        const condition = item.weather[0].main.toLowerCase();
+        const description = item.weather[0].description.toLowerCase();
+        
+        // Determine color filter based on weather condition
+        let filterColor = '';
+        if (condition.includes('cloud') || description.includes('cloud')) {
+          filterColor = 'brightness(0) saturate(100%) invert(40%) sepia(100%) saturate(2000%) hue-rotate(200deg) brightness(0.9)'; // Blue
+        } else if (condition.includes('rain') || description.includes('rain') || description.includes('drizzle')) {
+          filterColor = 'brightness(0) saturate(100%) invert(40%) sepia(100%) saturate(2000%) hue-rotate(200deg) brightness(0.8)'; // Darker blue
+        } else if (condition.includes('clear') || description.includes('clear') || description.includes('sun')) {
+          filterColor = 'brightness(0) saturate(100%) invert(80%) sepia(100%) saturate(2000%) hue-rotate(0deg) brightness(1.1)'; // Yellow/Orange
+        } else if (condition.includes('snow')) {
+          filterColor = 'brightness(0) saturate(100%) invert(100%)'; // White
+        } else if (condition.includes('thunder') || description.includes('thunder')) {
+          filterColor = 'brightness(0) saturate(100%) invert(20%) sepia(100%) saturate(2000%) hue-rotate(250deg)'; // Purple
+        } else if (condition.includes('mist') || condition.includes('fog') || description.includes('mist') || description.includes('fog')) {
+          filterColor = 'brightness(0) saturate(100%) invert(90%)'; // Light gray
+        }
 
         const dayDiv = document.createElement('div');
         dayDiv.classList.add('forecast-day');
+        const imgStyle = filterColor ? `style="filter: ${filterColor};"` : '';
         dayDiv.innerHTML = `
           <div class="fw-bold">${day}</div>
-          <img src="https://openweathermap.org/img/wn/${iconCode}@2x.png" alt="icon">
+          <img src="https://openweathermap.org/img/wn/${iconCode}@2x.png" alt="icon" ${imgStyle}>
           <div>${temp}°C</div>
         `;
         forecastContainer.appendChild(dayDiv);
@@ -719,16 +779,14 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
     let isChatbotLoading = false;
 
     function openChatbot() {
-      const modal = document.getElementById('chatbotModal');
-      modal.style.display = 'flex';
-      modal.classList.add('d-flex');
+      const widget = document.getElementById('chatbotWidget');
+      widget.style.display = 'block';
       loadChatHistory();
     }
 
     function closeChatbot() {
-      const modal = document.getElementById('chatbotModal');
-      modal.style.display = 'none';
-      modal.classList.remove('d-flex');
+      const widget = document.getElementById('chatbotWidget');
+      widget.style.display = 'none';
     }
 
     function handleChatKeypress(event) {
@@ -826,8 +884,8 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
       const avatar = sender === 'user' ? '👤' : '🤖';
 
       messageDiv.innerHTML = `
-    <div class="message-avatar rounded-circle d-flex align-items-center justify-content-center" style="flex-shrink: 0; width: 40px; height: 40px; ${sender === 'user' ? 'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);' : 'background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);'} color: white; font-size: 1.2rem;">${avatar}</div>
-    <div class="message-content ${sender === 'user' ? 'bg-primary text-white' : 'bg-white'} p-3 rounded-3 small" style="max-width: 75%; word-wrap: break-word;">${escapeHtml(message)}</div>
+    <div class="message-avatar rounded-circle d-flex align-items-center justify-content-center" style="flex-shrink: 0; width: 30px; height: 30px; ${sender === 'user' ? 'background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%);' : 'background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%);'} color: white; font-size: 0.9rem;">${avatar}</div>
+    <div class="message-content ${sender === 'user' ? 'text-white' : 'bg-white'}" style="${sender === 'user' ? 'background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%);' : ''} p-2 rounded-3 small; max-width: 75%; word-wrap: break-word;">${escapeHtml(message)}</div>
   `;
 
       messagesContainer.appendChild(messageDiv);
@@ -849,11 +907,11 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
       typingDiv.className = 'bot-message typing-indicator-container d-flex gap-3 mb-4';
       typingDiv.id = 'typingIndicator';
       typingDiv.innerHTML = `
-    <div class="message-avatar rounded-circle d-flex align-items-center justify-content-center" style="flex-shrink: 0; width: 40px; height: 40px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; font-size: 1.2rem;">🤖</div>
-    <div class="typing-indicator d-flex gap-1 p-3 bg-light rounded-3">
-      <div class="typing-dot rounded-circle bg-secondary" style="width: 8px; height: 8px; animation: typing 1.4s infinite;"></div>
-      <div class="typing-dot rounded-circle bg-secondary" style="width: 8px; height: 8px; animation: typing 1.4s infinite 0.2s;"></div>
-      <div class="typing-dot rounded-circle bg-secondary" style="width: 8px; height: 8px; animation: typing 1.4s infinite 0.4s;"></div>
+    <div class="message-avatar rounded-circle d-flex align-items-center justify-content-center" style="flex-shrink: 0; width: 30px; height: 30px; background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%); color: white; font-size: 0.9rem;">🤖</div>
+    <div class="typing-indicator d-flex gap-1 p-2 bg-light rounded-3">
+      <div class="typing-dot rounded-circle bg-secondary" style="width: 6px; height: 6px; animation: typing 1.4s infinite;"></div>
+      <div class="typing-dot rounded-circle bg-secondary" style="width: 6px; height: 6px; animation: typing 1.4s infinite 0.2s;"></div>
+      <div class="typing-dot rounded-circle bg-secondary" style="width: 6px; height: 6px; animation: typing 1.4s infinite 0.4s;"></div>
     </div>
   `;
       messagesContainer.appendChild(typingDiv);
@@ -889,9 +947,9 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
         if (result.success) {
           const messagesContainer = document.getElementById('chatbotMessages');
           messagesContainer.innerHTML = `
-        <div class="bot-message d-flex gap-3 mb-4">
-          <div class="message-avatar rounded-circle d-flex align-items-center justify-content-center" style="flex-shrink: 0; width: 40px; height: 40px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; font-size: 1.2rem;">🤖</div>
-          <div class="message-content bg-white p-3 rounded-3 small">
+        <div class="bot-message d-flex gap-2 mb-3">
+          <div class="message-avatar rounded-circle d-flex align-items-center justify-content-center" style="flex-shrink: 0; width: 30px; height: 30px; background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%); color: white; font-size: 0.9rem;">🤖</div>
+          <div class="message-content bg-white p-2 rounded-3 small shadow-sm">
             Hello! I'm your Electripid assistant powered by AI. I can help you with:
             <br>• Energy consumption analysis
             <br>• Money-saving tips
@@ -999,22 +1057,24 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
       const totalKwh = appliances.reduce((sum, app) => sum + parseFloat(app.monthly_kwh || 0), 0);
       const totalCost = totalKwh * currentRate;
       const dailyKwh = totalKwh / 30;
-      const yearlyCost = totalCost * 12;
 
       const activeAppliancesEl = document.getElementById('activeAppliances');
       const thisMonthKwhEl = document.getElementById('thisMonthKwh');
       const dailyConsumptionEl = document.getElementById('dailyConsumption');
       const monthlyCostEl = document.getElementById('monthlyCost');
-      const yearlyCostEl = document.getElementById('yearlyCost');
 
       if (activeAppliancesEl) activeAppliancesEl.textContent = appliances.length;
       if (thisMonthKwhEl) thisMonthKwhEl.textContent = totalKwh.toFixed(1);
       if (dailyConsumptionEl) dailyConsumptionEl.textContent = dailyKwh.toFixed(2);
       if (monthlyCostEl) monthlyCostEl.textContent = Math.round(totalCost);
-      if (yearlyCostEl) yearlyCostEl.textContent = Math.round(yearlyCost);
 
       updateForecastChart(totalKwh);
       updateApplianceDisplay();
+
+      const tips = document.getElementById('energyTipsContent');
+      if (tips) {
+        tips.style.display = appliances.length > 0 ? 'block' : 'none';
+      }
     }
 
     function initForecastChart() {
@@ -1022,10 +1082,10 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
       forecastChart = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+          labels: [],
           datasets: [{
             label: 'kWh',
-            data: [0, 0, 0, 0],
+            data: [],
             borderColor: '#1976d2',
             backgroundColor: 'rgba(25, 118, 210, 0.1)',
             tension: 0.4,
@@ -1061,15 +1121,22 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
     function updateForecastChart(totalKwh) {
       if (!forecastChart) return;
 
+      const today = new Date();
+      const weekCount = Math.min(4, Math.max(1, Math.ceil(today.getDate() / 7)));
+
+      const labels = [];
+      const data = [];
+
       const weeklyKwh = totalKwh / 4;
       const variation = weeklyKwh * 0.15;
 
-      forecastChart.data.datasets[0].data = [
-        weeklyKwh + (Math.random() * variation - variation / 2),
-        weeklyKwh + (Math.random() * variation - variation / 2),
-        weeklyKwh + (Math.random() * variation - variation / 2),
-        weeklyKwh + (Math.random() * variation - variation / 2)
-      ];
+      for (let i = 1; i <= weekCount; i++) {
+        labels.push(`Week ${i}`);
+        data.push(weeklyKwh + (Math.random() * variation - variation / 2));
+      }
+
+      forecastChart.data.labels = labels;
+      forecastChart.data.datasets[0].data = data;
       forecastChart.update();
     }
 
@@ -1094,7 +1161,7 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
               <div class="d-flex justify-content-between align-items-center">
                 <div>
                   <h6 class="mb-1">${appName}</h6>
-                  <small class="text-muted">${monthlyKwh.toFixed(2)} kWh/month • ₱${cost.toFixed(2)}</small>
+                  <small class="text-muted">${monthlyKwh.toFixed(2)} kWh/month</small>
                 </div>
                 <button class="btn btn-sm btn-outline-danger" onclick="removeApplianceDB(${appId})">
                   <i class="bi bi-trash"></i>
