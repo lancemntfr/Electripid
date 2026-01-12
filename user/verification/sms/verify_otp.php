@@ -12,7 +12,6 @@ $phone = $_SESSION['pending_phone'];
 $error = '';
 $success = '';
 
-// Check if user's email is verified (required to access settings)
 $email_check = $conn->prepare("SELECT verification_id FROM VERIFICATION WHERE user_id=? AND verification_type='email' AND is_verified=1 LIMIT 1");
 $email_check->bind_param("i", $user_id);
 $email_check->execute();
@@ -30,12 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($code)) {
             $error = "Please enter the verification code.";
         } else {
-            // Check for unverified SMS OTP (is_verified=0 for SMS verification)
-            $stmt = $conn->prepare("
-                SELECT verification_id FROM VERIFICATION
-                WHERE user_id=? AND verification_code=? AND verification_type='sms' AND is_verified=0 AND expires_at>NOW()
-                ORDER BY created_at DESC LIMIT 1
-            ");
+            $stmt = $conn->prepare("SELECT verification_id FROM VERIFICATION WHERE user_id=? AND verification_code=? AND verification_type='sms' AND is_verified=0 AND expires_at>NOW() ORDER BY created_at DESC LIMIT 1");
             $stmt->bind_param("is", $user_id, $code);
             $stmt->execute();
             $result = $stmt->get_result();
@@ -158,16 +152,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         document.addEventListener('DOMContentLoaded', function() {
             const codeInput = document.getElementById('code');
             
-            // Auto-format and validate OTP input
-            codeInput.addEventListener('input', function(e) {
+            codeInput.addEventListener('input', function(e) {       // Auto-format and validate OTP input
                 this.value = this.value.replace(/[^0-9]/g, '');
-                if (this.value.length === 6) {
-                    // Auto-submit when 6 digits entered
-                    document.getElementById('verifyForm').submit();
-                }
             });
 
-            // Focus on input
             codeInput.focus();
         });
 

@@ -77,3 +77,4 @@ if (!$sms_sent) {
 
 echo json_encode(['success' => true, 'message' => 'OTP sent successfully']);
 exit;
+?>

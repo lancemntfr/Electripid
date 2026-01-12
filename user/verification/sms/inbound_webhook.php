@@ -9,3 +9,4 @@ $message = trim($_GET['message'] ?? '');
 if (!$from || !$message) exit;
 
 handleSMSCommand($from, $message);
+?>

@@ -28,3 +28,4 @@ function handleSMSCommand($phone, $cmd) {
             sendSMS($phone, "Reply:\n1 - Forecast\n2 - Energy Tips");
     }
 }
+?>
