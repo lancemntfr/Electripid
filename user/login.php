@@ -107,6 +107,35 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../assets/css/user.css">
+    <style>
+        .success-modal-content {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: none;
+        }
+        .success-modal-header {
+            border-bottom: none;
+            text-align: center;
+            padding-bottom: 0.25rem;
+        }
+        .success-modal-title {
+            width: 100%;
+            font-weight: 600;
+            color: #198754; /* Bootstrap green */
+        }
+        .success-modal-body {
+            text-align: center;
+            padding-top: 0;
+            padding-bottom: 0.75rem;
+        }
+        .success-modal-body p {
+            margin-bottom: 0;
+        }
+        .success-modal-footer {
+            border-top: none;
+            padding-top: 0;
+        }
+    </style>
 </head>
 <body class="login-page">
     <div class="auth-container">
@@ -190,6 +219,89 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
             </div>
         </div>
     </div>
+<!-- Success Modal for password reset / account creation -->
+<div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content success-modal-content">
+            <div class="modal-body success-modal-body text-center py-5">
+                <div class="success-icon-wrapper mb-4">
+                    <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="40" cy="40" r="38" stroke="#28a745" stroke-width="4" fill="none"/>
+                        <path d="M25 40L35 50L55 30" stroke="#28a745" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h5 class="modal-title success-modal-title mb-3" id="successModalTitle">Success</h5>
+                <p id="successModalMessage" class="mb-4"></p>
+                <button type="button" class="btn btn-outline-light px-5 py-2" id="successModalOk" data-bs-dismiss="modal">CLOSE</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+#successModal .modal-content {
+    background: transparent;
+    border: none;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+#successModal .success-modal-body {
+    background: #FFFFFF;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+#successModal .success-icon-wrapper {
+    display: inline-block;
+    animation: checkmarkPop 0.5s ease-out;
+}
+
+#successModal .modal-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #000000;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+#successModal #successModalMessage {
+    color: #5a6c7d;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+#successModal .btn-outline-light {
+    border: 2px solid #0d6efd;
+    color: #FFFFFF;
+    background: #0d6efd;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    font-size: 0.85rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+#successModal .btn-outline-light:hover {
+    background: #0b5ed7;
+    border-color: #0b5ed7;
+    transform: translateY(-2px);
+}
+
+@keyframes checkmarkPop {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+</style>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -243,6 +355,34 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
             const emailField = document.querySelector('input[name="email"]');
             if (emailField && !emailField.value) {
                 emailField.focus();
+            }
+
+            // Show success modal after password reset or account creation
+            const params = new URLSearchParams(window.location.search);
+            let successMessage = '';
+
+            if (params.get('reset') === 'success') {
+                successMessage = 'You have successfully changed your password.';
+            } else if (params.get('verified') === '1') {
+                successMessage = 'You have successfully created your Electripid account.';
+            }
+
+            if (successMessage) {
+                const modalElement = document.getElementById('successModal');
+                const messageElement = document.getElementById('successModalMessage');
+                const okButton = document.getElementById('successModalOk');
+
+                if (modalElement && messageElement && okButton) {
+                    messageElement.textContent = successMessage;
+                    const successModal = new bootstrap.Modal(modalElement);
+
+                    okButton.addEventListener('click', function () {
+                        // Return to clean login URL without query parameters
+                        window.location.href = 'login.php';
+                    });
+
+                    successModal.show();
+                }
             }
         });
     </script>
