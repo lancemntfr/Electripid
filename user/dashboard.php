@@ -7,10 +7,29 @@ if (!isset($_SESSION['user_id'])) {
   exit;
 }
 
-$username = htmlspecialchars($_SESSION['username'] ?? 'User');
-$userInitial = isset($_SESSION['username']) ? strtoupper(substr($_SESSION['username'], 0, 1)) : 'U';
-$email = htmlspecialchars($_SESSION['email'] ?? 'user@example.com');
+// Fetch user data from database
 $userId = $_SESSION['user_id'];
+$userName = 'User';
+$userEmail = '';
+
+if (!empty($userId)) {
+    $user_id = mysqli_real_escape_string($conn, $userId);
+    $user_query = "SELECT fname, lname, email FROM USER WHERE user_id = '$user_id' LIMIT 1";
+    $user_result = mysqli_query($conn, $user_query);
+    
+    if ($user_result && mysqli_num_rows($user_result) === 1) {
+        $user_row = mysqli_fetch_assoc($user_result);
+        $userName = trim($user_row['fname'] . ' ' . $user_row['lname']);
+        $userEmail = $user_row['email'];
+    } else {
+        // Fallback to session data if query fails
+        $userName = htmlspecialchars($_SESSION['username'] ?? 'User');
+        $userEmail = htmlspecialchars($_SESSION['email'] ?? '');
+    }
+} else {
+    $userName = htmlspecialchars($_SESSION['username'] ?? 'User');
+    $userEmail = htmlspecialchars($_SESSION['email'] ?? '');
+}
 
 $provider_query = "SELECT provider_name, rates FROM ELECTRICITY_PROVIDER";
 $provider_result = executeQuery($provider_query);
@@ -79,26 +98,35 @@ if ($household_result && $household_result->num_rows > 0) {
         </button>
         <!-- User Profile -->
         <div class="dropdown ms-2">
-          <button class="btn p-0 d-flex align-items-center" type="button" data-bs-toggle="dropdown">
+          <button class="btn p-0 d-flex align-items-center" type="button" data-bs-toggle="dropdown" aria-expanded="false">
             <i class="bi bi-person-circle" style="font-size: 2rem; color: var(--secondary-color);"></i>
+            <div class="ms-2 text-start d-none d-md-block">
+              <div class="fw-semibold" style="font-size: 0.9rem; line-height: 1.2;">
+                <?= htmlspecialchars($userName) ?>
+              </div>
+              <?php if (!empty($userEmail)): ?>
+                <div class="small text-muted" style="font-size: 0.75rem; line-height: 1.2;">
+                  <?= htmlspecialchars($userEmail) ?>
+                </div>
+              <?php endif; ?>
+            </div>
           </button>
-          <ul class="dropdown-menu dropdown-menu-end">
-            <li>
-              <a class="dropdown-item" href="#">
-                <i class="bi bi-person"></i> My Profile
-              </a>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li class="d-block d-md-none px-3 pt-2 pb-1">
+              <div class="fw-semibold"><?= htmlspecialchars($userName) ?></div>
+              <?php if (!empty($userEmail)): ?>
+                <div class="small text-muted"><?= htmlspecialchars($userEmail) ?></div>
+              <?php endif; ?>
             </li>
+            <li><hr class="dropdown-divider d-block d-md-none mb-0"></li>
             <li>
-                <a class="dropdown-item" href="settings.php">
-                  <i class="bi bi-gear-fill"></i> Settings
+              <a class="dropdown-item" href="settings.php">
+                <i class="bi bi-gear-fill me-2"></i> Settings
               </a>
-            </li>
-            <li>
-              <hr class="dropdown-divider">
             </li>
             <li>
               <a class="dropdown-item text-danger" href="logout.php">
-                <i class="bi bi-box-arrow-right"></i> Logout
+                <i class="bi bi-box-arrow-right me-2"></i> Logout
               </a>
             </li>
           </ul>
