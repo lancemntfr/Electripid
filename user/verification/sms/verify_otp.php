@@ -76,38 +76,64 @@
     <link rel="stylesheet" href="../../../assets/css/user.css">
     <style>
         body {
-            background: linear-gradient(135deg, #e3f2fd 0%, white 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            background: linear-gradient(135deg, #e3f2fd 0%, white 100%);
         }
-        .verify-container {
-            max-width: 450px;
+        .reset-container {
+            max-width: 500px;
             width: 100%;
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        .otp-input {
-            font-size: 2rem;
+        .code-input-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 30px 0;
+        }
+        .code-input-box {
+            width: 50px;
+            height: 60px;
             text-align: center;
-            letter-spacing: 0.5rem;
-            font-weight: bold;
+            font-size: 1.5rem;
+            font-weight: 600;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            background: white;
+            transition: all 0.3s ease;
+        }
+        .code-input-box:focus {
+            outline: none;
+            border-color: #1e88e5;
+            box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
+        }
+        .code-input-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+        }
+        @media (max-width: 576px) {
+            .code-input-box {
+                width: 40px;
+                height: 50px;
+                font-size: 1.2rem;
+            }
+            .code-input-group {
+                gap: 5px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="verify-container">
-        <div class="text-center mb-4">
-            <div class="mb-3">
-                <i class="bi bi-phone-fill text-primary" style="font-size: 3rem;"></i>
-            </div>
-            <h2>Verify Phone Number</h2>
-            <p class="text-muted">Enter the 6-digit code sent to<br><strong><?= htmlspecialchars($phone) ?></strong></p>
-        </div>
+    <div class="reset-container">
+        <h2 class="mb-2 text-center">Verify Phone Number</h2>
+        <p class="text-muted text-center mb-4">Enter the 6-digit code sent to <strong><?= htmlspecialchars($phone) ?></strong></p>
 
         <?php if (!empty($error)): ?>
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -123,47 +149,114 @@
             </div>
         <?php endif; ?>
 
-        <form method="POST" id="verifyForm">
-            <div class="mb-4">
-                <label class="form-label">Verification Code</label>
-                <input type="text" class="form-control otp-input" name="code" id="code" 
-                       maxlength="6" pattern="[0-9]{6}" required autocomplete="off" 
-                       placeholder="000000" autofocus>
-                <small class="text-muted">Code expires in 15 minutes</small>
+        <form method="POST" id="verifyForm" class="mt-3">
+            <input type="hidden" name="code" id="fullCode" required>
+            
+            <div class="code-input-container">
+                <div class="code-input-group">
+                    <input type="text" class="code-input-box" maxlength="1" pattern="[0-9]" inputmode="numeric" id="code1" autocomplete="off">
+                    <input type="text" class="code-input-box" maxlength="1" pattern="[0-9]" inputmode="numeric" id="code2" autocomplete="off">
+                    <input type="text" class="code-input-box" maxlength="1" pattern="[0-9]" inputmode="numeric" id="code3" autocomplete="off">
+                    <input type="text" class="code-input-box" maxlength="1" pattern="[0-9]" inputmode="numeric" id="code4" autocomplete="off">
+                    <input type="text" class="code-input-box" maxlength="1" pattern="[0-9]" inputmode="numeric" id="code5" autocomplete="off">
+                    <input type="text" class="code-input-box" maxlength="1" pattern="[0-9]" inputmode="numeric" id="code6" autocomplete="off">
+                </div>
             </div>
-
-            <div class="d-grid gap-2 mb-3">
-                <button type="submit" name="verify" class="btn btn-primary btn-lg">
-                    <i class="bi bi-check-circle me-2"></i>Verify
-                </button>
-            </div>
-
-            <div class="text-center">
-                <p class="text-muted small mb-2">Didn't receive the code?</p>
-                <button type="button" class="btn btn-link text-decoration-none" onclick="resendOTP()" id="resendBtn">
-                    <i class="bi bi-arrow-clockwise me-1"></i>Resend Code
-                </button>
-            </div>
-
-            <div class="text-center mt-4">
-                <a href="../../settings.php" class="text-decoration-none small">
-                    <i class="bi bi-arrow-left me-1"></i>Back to Settings
-                </a>
-            </div>
+            
+            <button type="submit" name="verify" class="btn btn-primary w-100">Verify</button>
         </form>
+
+        <div class="text-center mt-3">
+            <p class="text-muted small mb-2">Didn't receive the code?</p>
+            <button type="button" class="btn btn-outline-secondary w-100" onclick="resendOTP()" id="resendBtn">
+                <i class="bi bi-arrow-clockwise me-1"></i>Resend Code
+            </button>
+        </div>
+
+        <div class="text-center mt-3">
+            <a href="../../settings.php" class="text-decoration-none small">
+                <i class="bi bi-arrow-left me-1"></i>Back to Settings
+            </a>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const codeInput = document.getElementById('code');
+            const inputs = ['code1', 'code2', 'code3', 'code4', 'code5', 'code6'];
+            const inputElements = inputs.map(id => document.getElementById(id));
             
-            // Auto-format and validate OTP input
-            codeInput.addEventListener('input', function(e) {
-                this.value = this.value.replace(/[^0-9]/g, '');
+            // Focus first input on load
+            inputElements[0].focus();
+            
+            // Handle input and auto-advance
+            inputElements.forEach((input, index) => {
+                input.addEventListener('input', function(e) {
+                    // Only allow numbers
+                    if (!/^\d$/.test(e.target.value)) {
+                        e.target.value = '';
+                        return;
+                    }
+                    
+                    // Auto-advance to next input
+                    if (e.target.value && index < inputElements.length - 1) {
+                        inputElements[index + 1].focus();
+                    }
+                    
+                    updateFullCode();
+                });
+                
+                // Handle paste
+                input.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                    const pastedData = (e.clipboardData || window.clipboardData).getData('text');
+                    if (/^\d{6}$/.test(pastedData)) {
+                        pastedData.split('').forEach((digit, idx) => {
+                            if (idx < inputElements.length) {
+                                inputElements[idx].value = digit;
+                            }
+                        });
+                        inputElements[inputElements.length - 1].focus();
+                        updateFullCode();
+                    }
+                });
+                
+                input.addEventListener('keydown', function(e) {
+                    // Handle backspace
+                    if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                        inputElements[index - 1].focus();
+                        inputElements[index - 1].value = '';
+                        updateFullCode();
+                    }
+                });
+                
+                // Prevent non-numeric input
+                input.addEventListener('keypress', function(e) {
+                    if (!/^\d$/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                        e.preventDefault();
+                    }
+                });
             });
-
-            codeInput.focus();
+            
+            // Update hidden input with full code
+            function updateFullCode() {
+                const fullCode = inputElements.map(input => input.value).join('');
+                document.getElementById('fullCode').value = fullCode;
+            }
+            
+            // Form submission validation
+            document.getElementById('verifyForm').addEventListener('submit', function(e) {
+                const fullCode = inputElements.map(input => input.value).join('');
+                
+                if (fullCode.length !== 6) {
+                    e.preventDefault();
+                    alert('Please enter the complete 6-digit code.');
+                    inputElements[0].focus();
+                    return false;
+                }
+                
+                document.getElementById('fullCode').value = fullCode;
+            });
         });
 
         async function resendOTP() {
@@ -187,7 +280,7 @@
                         <i class="bi bi-check-circle-fill me-2"></i>${result.message || 'OTP resent successfully!'}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     `;
-                    document.querySelector('.verify-container').insertBefore(alertDiv, document.querySelector('form'));
+                    document.querySelector('.reset-container').insertBefore(alertDiv, document.querySelector('form'));
                     
                     setTimeout(() => alertDiv.remove(), 3000);
                 } else {

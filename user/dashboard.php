@@ -63,7 +63,7 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
   <link rel="stylesheet" href="../assets/css/user.css">
 </head>
 
-<body>
+<body class="dashboard-page">
   <!-- Navbar -->
   <nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm" style="border-radius: 0 !important;">
     <div class="container">
@@ -440,6 +440,17 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
         max-width: 85% !important;
       }
     }
+
+    /* Hide number input spinners */
+    #customAmount::-webkit-outer-spin-button,
+    #customAmount::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    #customAmount[type=number] {
+      -moz-appearance: textfield;
+    }
   </style>
 
   <!-- Floating Action Buttons -->
@@ -657,16 +668,41 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
     // ===============================
     // PAYPAL INTEGRATION (FIXED)
     // ===============================
+    function getDonationAmount() {
+      const customAmountInput = document.getElementById('customAmount');
+      const typedAmount = Number(customAmountInput.value);
+
+      if (!isNaN(typedAmount) && typedAmount >= 10) {
+        selectedDonationAmount = typedAmount;
+        return typedAmount;
+      }
+
+      if (selectedDonationAmount && selectedDonationAmount >= 10) {
+        return Number(selectedDonationAmount);
+      }
+
+      return null;
+    }
+
     function renderPayPalButtons() {
       const container = document.getElementById('paypal-button-container');
       container.innerHTML = '';
 
-      const phpAmount = Number(selectedDonationAmount);
+      const phpAmount = getDonationAmount();
 
       // HARD VALIDATION
       if (!phpAmount || isNaN(phpAmount) || phpAmount < 10) {
         container.innerHTML =
           '<div class="alert alert-warning">Minimum donation is ₱10.</div>';
+        return;
+      }
+
+      // Check if PayPal SDK is loaded
+      if (typeof paypal === 'undefined') {
+        container.innerHTML = '<div class="alert alert-info">Loading PayPal...</div>';
+        setTimeout(function() {
+          renderPayPalButtons();
+        }, 500);
         return;
       }
 
@@ -678,102 +714,110 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
         usd: usdAmount
       });
 
-      paypal.Buttons({
+      try {
+        paypal.Buttons({
 
-          // CREATE ORDER
-          createOrder: async function() {
-            try {
-              const response = await fetch('../paypal/paypal.php?action=create', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  amount: usdAmount
-                })
-              });
+            // CREATE ORDER
+            createOrder: async function() {
+              try {
+                const response = await fetch('../paypal/paypal.php?action=create', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    amount: usdAmount
+                  })
+                });
 
-              const text = await response.text();
-              if (!response.ok) throw new Error(text);
+                const text = await response.text();
+                if (!response.ok) throw new Error(text);
 
-              const result = JSON.parse(text);
-              if (!result.id) throw new Error('No order ID returned');
+                const result = JSON.parse(text);
+                if (!result.id) throw new Error('No order ID returned');
 
-              return result.id;
+                return result.id;
 
-            } catch (error) {
-              console.error('Create Order Error:', error);
-              alert('Unable to create payment.\n\n' + error.message);
-              throw error;
-            }
-          },
-
-          // CAPTURE PAYMENT
-          onApprove: async function(data) {
-            try {
-              const response = await fetch('../paypal/paypal.php?action=capture', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  orderID: data.orderID,
-                  phpAmount: phpAmount
-                })
-              });
-
-              const text = await response.text();
-              if (!response.ok) throw new Error(text);
-
-              const result = JSON.parse(text);
-
-              if (result.success) {
-                alert(
-                  'Thank you for your donation of ₱' +
-                  phpAmount.toFixed(2) +
-                  ' 💚'
-                );
-                closeDonationModal();
-                setTimeout(() => location.reload(), 1500);
-              } else {
-                throw new Error(result.error || 'Payment failed');
+              } catch (error) {
+                console.error('Create Order Error:', error);
+                alert('Unable to create payment.\n\n' + error.message);
+                throw error;
               }
+            },
 
-            } catch (error) {
-              console.error('Capture Error:', error);
-              alert(
-                'Payment processing failed.\n\n' +
-                error.message +
-                '\n\nIf charged, please contact support.'
-              );
+            // CAPTURE PAYMENT
+            onApprove: async function(data) {
+              try {
+                const response = await fetch('../paypal/paypal.php?action=capture', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    orderID: data.orderID,
+                    phpAmount: phpAmount
+                  })
+                });
+
+                const text = await response.text();
+                if (!response.ok) throw new Error(text);
+
+                const result = JSON.parse(text);
+
+                if (result.success) {
+                  alert(
+                    'Thank you for your donation of ₱' +
+                    phpAmount.toFixed(2) +
+                    ' 💚'
+                  );
+                  closeDonationModal();
+                  setTimeout(() => location.reload(), 1500);
+                } else {
+                  throw new Error(result.error || 'Payment failed');
+                }
+
+              } catch (error) {
+                console.error('Capture Error:', error);
+                alert(
+                  'Payment processing failed.\n\n' +
+                  error.message +
+                  '\n\nIf charged, please contact support.'
+                );
+              }
+            },
+
+            // CANCEL
+            onCancel: function() {
+              alert('Payment was cancelled.');
+            },
+
+            // ERROR
+            onError: function(err) {
+              console.error('PayPal Error:', err);
+              alert('An error occurred. Please try again.');
+            },
+
+            // STYLE
+            style: {
+              layout: 'vertical',
+              color: 'blue',
+              shape: 'rect',
+              label: 'paypal'
             }
-          },
 
-          // CANCEL
-          onCancel: function() {
-            alert('Payment was cancelled.');
-          },
-
-          // ERROR
-          onError: function(err) {
-            console.error('PayPal Error:', err);
-            alert('An error occurred. Please try again.');
-          },
-
-          // STYLE
-          style: {
-            layout: 'vertical',
-            color: 'blue',
-            shape: 'rect',
-            label: 'paypal'
-          }
-
-        }).render('#paypal-button-container')
-        .catch(error => {
-          console.error('Render Error:', error);
-          container.innerHTML =
-            '<div class="alert alert-danger">Failed to load PayPal buttons.</div>';
-        });
+          }).render('#paypal-button-container')
+          .catch(error => {
+            console.error('Render Error:', error);
+            container.innerHTML =
+              '<div class="alert alert-danger">Failed to load PayPal buttons. Please refresh the page and try again.</div>';
+          });
+      } catch (error) {
+        console.error('PayPal Initialization Error:', error);
+        container.innerHTML = '<div class="alert alert-info">Loading PayPal...</div>';
+        setTimeout(function() {
+          renderPayPalButtons();
+        }, 1000);
+      }
     }
     // Chatbot Functions with Ollama Integration
     let isChatbotLoading = false;
@@ -1008,7 +1052,17 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
             rate: currentRate
           })
         });
-        const result = await response.json();
+
+        const text = await response.text();
+        let result;
+        
+        try {
+          result = JSON.parse(text);
+        } catch (e) {
+          console.error('Invalid JSON response:', text);
+          console.error('Error:', e);
+          return;
+        }
 
         if (result.success) {
           document.getElementById('deviceName').value = '';
@@ -1017,11 +1071,10 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
           document.getElementById('deviceUsagePerWeek').value = '';
           location.reload();
         } else {
-          alert('Error adding appliance: ' + result.error);
+          console.error('Error adding appliance:', result.error);
         }
       } catch (error) {
         console.error('Error:', error);
-        alert('Error adding appliance');
       }
     }
 
@@ -1038,16 +1091,25 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
               user_id: userId
             })
           });
-          const result = await response.json();
+
+          const text = await response.text();
+          let result;
+          
+          try {
+            result = JSON.parse(text);
+          } catch (e) {
+            console.error('Invalid JSON response:', text);
+            console.error('Error:', e);
+            return;
+          }
 
           if (result.success) {
             location.reload();
           } else {
-            alert('Error removing appliance');
+            console.error('Error removing appliance:', result.error);
           }
         } catch (error) {
           console.error('Error:', error);
-          alert('Error removing appliance');
         }
       }
     }
@@ -1068,12 +1130,41 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
       if (dailyConsumptionEl) dailyConsumptionEl.textContent = dailyKwh.toFixed(2);
       if (monthlyCostEl) monthlyCostEl.textContent = Math.round(totalCost);
 
+      // Save electricity reading
+      if (totalKwh > 0) {
+        saveReading(dailyKwh, totalKwh);
+      }
+
       updateForecastChart(totalKwh);
       updateApplianceDisplay();
 
       const tips = document.getElementById('energyTipsContent');
       if (tips) {
         tips.style.display = appliances.length > 0 ? 'block' : 'none';
+      }
+    }
+
+    // Save electricity reading to database
+    async function saveReading(dailyKwh, monthlyKwh) {
+      try {
+        const power = dailyKwh * 1000; // Convert to watts
+        const voltage = 220;
+        const current = power / voltage;
+        
+        await fetch('api/save_readings.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            energy_kwh: dailyKwh,
+            voltage: voltage,
+            current: current,
+            power: power
+          })
+        });
+      } catch (error) {
+        console.error('Error saving reading:', error);
       }
     }
 
@@ -1132,12 +1223,42 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
 
       for (let i = 1; i <= weekCount; i++) {
         labels.push(`Week ${i}`);
-        data.push(weeklyKwh + (Math.random() * variation - variation / 2));
+        const predictedKwh = weeklyKwh + (Math.random() * variation - variation / 2);
+        data.push(predictedKwh);
       }
 
       forecastChart.data.labels = labels;
       forecastChart.data.datasets[0].data = data;
       forecastChart.update();
+
+      // Save monthly forecast to database
+      if (totalKwh > 0) {
+        saveForecast(totalKwh, totalKwh * currentRate);
+      }
+    }
+
+    // Save forecast to database
+    async function saveForecast(predictedKwh, predictedCost) {
+      try {
+        const today = new Date();
+        const forecastDate = today.toISOString().split('T')[0];
+        
+        await fetch('api/save_forecast.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            forecast_type: 'monthly',
+            predicted_kwh: predictedKwh,
+            predicted_cost: predictedCost,
+            source_type: 'appliances',
+            forecast_date: forecastDate
+          })
+        });
+      } catch (error) {
+        console.error('Error saving forecast:', error);
+      }
     }
 
     function updateApplianceDisplay() {

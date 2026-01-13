@@ -90,7 +90,7 @@
         $check_result = executeQuery($check_query);
 
         if ($check_result && mysqli_num_rows($check_result) > 0) {
-            return ['valid' => false, 'error' => 'Email address is already registered. Please use a different email or <a href="login.php">login here</a>.'];
+            return ['valid' => false, 'error' => 'This email address is already taken. You cannot receive a verification code for an email that is already registered. Please use a different email address or <a href="login.php">login here</a>.'];
         }
 
         return ['valid' => true, 'error' => ''];

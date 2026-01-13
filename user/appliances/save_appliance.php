@@ -1,15 +1,19 @@
 <?php
+    // Prevent any output before JSON
+    ob_start();
     session_start();
     header('Content-Type: application/json');
 
     require_once __DIR__ . '/../../connect.php';
 
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        ob_clean();
         echo json_encode(['success' => false, 'error' => 'Invalid request method']);
         exit;
     }
 
     if (!isset($_SESSION['user_id'])) {
+        ob_clean();
         echo json_encode(['success' => false, 'error' => 'Not authenticated']);
         exit;
     }
@@ -18,6 +22,7 @@
     $data = json_decode(file_get_contents('php://input'), true);
 
     if (!$data) {
+        ob_clean();
         echo json_encode(['success' => false, 'error' => 'Invalid JSON data']);
         exit;
     }
@@ -29,6 +34,7 @@
     $rate = floatval($data['rate'] ?? 12.00);
 
     if (empty($appliance_name) || $power_watts <= 0 || $hours_per_day <= 0 || $usage_per_week <= 0) {
+        ob_clean();
         echo json_encode(['success' => false, 'error' => 'All fields are required and must be greater than 0']);
         exit;
     }
@@ -42,6 +48,7 @@
         $provider_result = executeQuery($default_provider_query);
         
         if (!$provider_result || mysqli_num_rows($provider_result) === 0) {
+            ob_clean();
             echo json_encode(['success' => false, 'error' => 'No electricity provider found. Please set up your household first.']);
             exit;
         }
@@ -53,6 +60,7 @@
         $create_result = executeQuery($create_household);
         
         if (!$create_result) {
+            ob_clean();
             echo json_encode(['success' => false, 'error' => 'Failed to create household']);
             exit;
         }
@@ -78,14 +86,25 @@
     $insert_result = executeQuery($insert_query);
 
     if ($insert_result) {
+        $appliance_id = mysqli_insert_id($conn);
+        
+        // Create notification for appliance added
+        $notif_title = "Appliance Added";
+        $notif_message = "You have successfully added '" . $appliance_name . "' to your appliances list.";
+        $notif_query = "INSERT INTO NOTIFICATION (user_id, notification_type, channel, related_id, related_type, title, message, status) VALUES ('$user_id', 'alert', 'in-app', '$appliance_id', 'general', '$notif_title', '$notif_message', 'sent')";
+        executeQuery($notif_query);
+        
+        ob_clean();
         echo json_encode([
             'success' => true, 
             'message' => 'Appliance added successfully',
-            'appliance_id' => mysqli_insert_id($conn)
+            'appliance_id' => $appliance_id
         ]);
     } else {
-        echo json_encode(['success' => false, 'error' => 'Failed to add appliance']);
+        ob_clean();
+        echo json_encode(['success' => false, 'error' => 'Failed to add appliance. Please try again.']);
     }
 
     $conn->close();
+    exit;
 ?>
