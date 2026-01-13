@@ -193,6 +193,18 @@
         .btn-signup:hover {
             background: #1565c0;
         }
+        .form-error-container {
+            border: 2px solid #f8d7da;
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 15px;
+            background: #fff5f5;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #842029;
+            font-size: 0.9rem;
+        }
         @media (max-width: 768px) {
             .auth-container {
                 flex-direction: column;
@@ -224,6 +236,8 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             <?php endif; ?>
+            
+            <div id="formError"></div>
             
             <form method="POST" action="" id="registerForm">
                 <input type="hidden" name="register" value="1">
@@ -428,6 +442,11 @@
             const lastName = document.querySelector('input[name="last_name"]').value.trim();
             const terms = document.getElementById('terms').checked;
             const registerBtn = document.getElementById('registerBtn');
+            const formError = document.getElementById('formError');
+
+            if (formError) {
+                formError.innerHTML = '';
+            }
             
             if (!firstName || !lastName) {
                 e.preventDefault();
@@ -445,7 +464,12 @@
             
             if (password !== confirmPassword) {
                 e.preventDefault();
-                alert('Passwords do not match!');
+                if (formError) {
+                    formError.innerHTML = '<div class="form-error-container"><i class="bi bi-exclamation-triangle-fill"></i><span>Passwords do not match. Please make sure both password fields are the same.</span></div>';
+                    formError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                    alert('Passwords do not match. Please make sure both password fields are the same.');
+                }
                 document.getElementById('confirm_password').focus();
                 return;
             }
