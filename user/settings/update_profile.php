@@ -68,19 +68,16 @@
         }
     }
 
-    // Validate provider
-    if ($provider_id <= 0) {
-        response(['success' => false, 'error' => 'Please select an electricity provider.']);
-        exit;
-    }
-
-    $provider_id_escaped = mysqli_real_escape_string($conn, $provider_id);
-    $check_provider_query = "SELECT provider_id FROM ELECTRICITY_PROVIDER WHERE provider_id = '$provider_id_escaped'";
-    $check_provider_result = executeQuery($check_provider_query);
-    
-    if (!$check_provider_result || mysqli_num_rows($check_provider_result) === 0) {
-        response(['success' => false, 'error' => 'Invalid electricity provider.']);
-        exit;
+    // Validate provider only if provided and > 0
+    if ($provider_id > 0) {
+        $provider_id_escaped = mysqli_real_escape_string($conn, $provider_id);
+        $check_provider_query = "SELECT provider_id FROM ELECTRICITY_PROVIDER WHERE provider_id = '$provider_id_escaped'";
+        $check_provider_result = executeQuery($check_provider_query);
+        
+        if (!$check_provider_result || mysqli_num_rows($check_provider_result) === 0) {
+            response(['success' => false, 'error' => 'Invalid electricity provider.']);
+            exit;
+        }
     }
 
     // Validate password if provided
@@ -118,29 +115,32 @@
         exit;
     }
 
-    // Update HOUSEHOLD table
-    $check_household_query = "SELECT household_id FROM HOUSEHOLD WHERE user_id = '$user_id_escaped'";
-    $check_household_result = executeQuery($check_household_query);
-    
-    if ($check_household_result && mysqli_num_rows($check_household_result) > 0) {
-        $household_row = mysqli_fetch_assoc($check_household_result);
-        $household_id = mysqli_real_escape_string($conn, $household_row['household_id']);
+    // Update HOUSEHOLD table only if provider_id is provided
+    if ($provider_id > 0) {
+        $provider_id_escaped = mysqli_real_escape_string($conn, $provider_id);
+        $check_household_query = "SELECT household_id FROM HOUSEHOLD WHERE user_id = '$user_id_escaped'";
+        $check_household_result = executeQuery($check_household_query);
         
-        $update_household_query = "UPDATE HOUSEHOLD SET provider_id = '$provider_id_escaped' WHERE household_id = '$household_id'";
-        $update_household_result = executeQuery($update_household_query);
-        
-        if (!$update_household_result) {
-            response(['success' => false, 'error' => 'Failed to update household settings.']);
-            exit;
-        }
-    } else {
-        // Create household if it doesn't exist
-        $insert_household_query = "INSERT INTO HOUSEHOLD (user_id, provider_id) VALUES ('$user_id_escaped', '$provider_id_escaped')";
-        $insert_household_result = executeQuery($insert_household_query);
-        
-        if (!$insert_household_result) {
-            response(['success' => false, 'error' => 'Failed to create household settings.']);
-            exit;
+        if ($check_household_result && mysqli_num_rows($check_household_result) > 0) {
+            $household_row = mysqli_fetch_assoc($check_household_result);
+            $household_id = mysqli_real_escape_string($conn, $household_row['household_id']);
+            
+            $update_household_query = "UPDATE HOUSEHOLD SET provider_id = '$provider_id_escaped' WHERE household_id = '$household_id'";
+            $update_household_result = executeQuery($update_household_query);
+            
+            if (!$update_household_result) {
+                response(['success' => false, 'error' => 'Failed to update household settings.']);
+                exit;
+            }
+        } else {
+            // Create household if it doesn't exist
+            $insert_household_query = "INSERT INTO HOUSEHOLD (user_id, provider_id) VALUES ('$user_id_escaped', '$provider_id_escaped')";
+            $insert_household_result = executeQuery($insert_household_query);
+            
+            if (!$insert_household_result) {
+                response(['success' => false, 'error' => 'Failed to create household settings.']);
+                exit;
+            }
         }
     }
 

@@ -150,14 +150,20 @@
         }
         .change-btn {
             white-space: nowrap;
-            min-width: 40px;
-            width: 40px;
-            height: 40px;
+            min-width: 45px;
+            width: 45px;
+            height: 45px;
             padding: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1rem;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .change-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
         .phone-verify-btn {
             margin-top: 0;
@@ -320,8 +326,8 @@
                             <button type="button" class="btn btn-outline-primary change-btn" onclick="openChangeModal('email', 'Email Address', '<?= htmlspecialchars($user['email'], ENT_QUOTES) ?>', 'email')" title="Edit Email">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <button type="button" class="btn btn-primary change-btn phone-verify-btn" onclick="openPhoneModal()" title="<?= !empty($user['cp_number']) ? 'Update Phone' : 'Add Phone' ?>">
-                                <i class="bi bi-<?= !empty($user['cp_number']) ? 'telephone' : 'plus-circle' ?>"></i>
+                            <button type="button" class="btn btn-outline-primary change-btn phone-verify-btn" onclick="openPhoneModal()" title="<?= !empty($user['cp_number']) ? 'Update Phone' : 'Add Phone' ?>">
+                                <i class="bi bi-<?= !empty($user['cp_number']) ? 'pencil' : 'plus-circle' ?>"></i>
                             </button>
                         </div>
                     </div>
@@ -897,7 +903,7 @@
                     [currentField]: newValue
                 };
 
-                const response = await fetch('appliances/update_profile.php', {
+                const response = await fetch('settings/update_profile.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -951,7 +957,7 @@
             saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
 
             try {
-                const response = await fetch('appliances/update_profile.php', {
+                const response = await fetch('settings/update_profile.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1002,7 +1008,7 @@
             saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
 
             try {
-                const response = await fetch('appliances/update_profile.php', {
+                const response = await fetch('settings/update_profile.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1054,7 +1060,7 @@
             saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
 
             try {
-                const response = await fetch('appliances/update_profile.php', {
+                const response = await fetch('settings/update_profile.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1161,7 +1167,7 @@
             saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
 
             try {
-                const response = await fetch('appliances/update_profile.php', {
+                const response = await fetch('settings/update_profile.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1272,90 +1278,6 @@
             this.value = value;
         });
 
-        document.getElementById('settingsForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const saveBtn = document.getElementById('saveBtn');
-            const originalText = saveBtn.innerHTML;
-            saveBtn.disabled = true;
-            saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
-            
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirm_password').value;
-            
-            // Validate password if provided
-            if (password || confirmPassword) {
-                if (password.length < 8) {
-                    showAlert('Password must be at least 8 characters long.', 'danger');
-                    saveBtn.disabled = false;
-                    saveBtn.innerHTML = originalText;
-                    return;
-                }
-                
-                if (password !== confirmPassword) {
-                    showAlert('Passwords do not match.', 'danger');
-                    saveBtn.disabled = false;
-                    saveBtn.innerHTML = originalText;
-                    return;
-                }
-            }
-            
-            const formData = {
-                fname: document.getElementById('fname').value.trim(),
-                lname: document.getElementById('lname').value.trim(),
-                email: document.getElementById('email').value.trim(),
-                city: document.getElementById('city').options[document.getElementById('city').selectedIndex].text,
-                barangay: document.getElementById('barangay').value,
-                provider_id: parseInt(document.getElementById('provider_id').value),
-                password: password,
-                confirm_password: confirmPassword
-            };
-            
-            try {
-                const response = await fetch('appliances/update_profile.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        notify_email: notifyEmail ? 1 : 0,
-                        notify_sms: notifySms ? 1 : 0
-                    })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    // Update the display text
-                    const emailValue = document.querySelector('#notificationsCollapse .setting-item:first-child .setting-value');
-                    const smsValue = document.querySelector('#notificationsCollapse .setting-item:last-child .setting-value');
-                    
-                    if (emailValue) {
-                        emailValue.innerHTML = notifyEmail 
-                            ? '<span class="text-success"><i class="bi bi-check-circle me-1"></i>Enabled</span>' 
-                            : '<span class="text-muted"><i class="bi bi-x-circle me-1"></i>Disabled</span>';
-                    }
-                    
-                    if (smsValue) {
-                        smsValue.innerHTML = notifySms 
-                            ? '<span class="text-success"><i class="bi bi-check-circle me-1"></i>Enabled</span>' 
-                            : '<span class="text-muted"><i class="bi bi-x-circle me-1"></i>Disabled</span>';
-                    }
-                } else {
-                    console.error('Failed to save notification preferences:', result.error);
-                    // Revert the switch
-                    document.getElementById('notifyEmailSwitch').checked = !notifyEmail;
-                    document.getElementById('notifySmsSwitch').checked = !notifySms;
-                    alert('Failed to save notification preferences. Please try again.');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                // Revert the switch
-                document.getElementById('notifyEmailSwitch').checked = !notifyEmail;
-                document.getElementById('notifySmsSwitch').checked = !notifySms;
-                alert('An error occurred. Please try again.');
-            }
-        }
     </script>
 </body>
 </html>

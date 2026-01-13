@@ -31,11 +31,13 @@ if (!empty($userId)) {
     $userEmail = htmlspecialchars($_SESSION['email'] ?? '');
 }
 
-$provider_query = "SELECT provider_name, rates FROM ELECTRICITY_PROVIDER";
+$provider_query = "SELECT provider_name FROM ELECTRICITY_PROVIDER";
 $provider_result = executeQuery($provider_query);
 $providerRates = [];
+// Default rate per kWh (can be customized per provider if needed)
+$defaultRate = 10.0; // PHP per kWh
 while ($row = $provider_result->fetch_assoc()) {
-  $providerRates[$row['provider_name']] = floatval($row['rates']);
+  $providerRates[$row['provider_name']] = $defaultRate;
 }
 
 $appliances = [];
@@ -43,7 +45,7 @@ $currentProvider = '';
 $currentRate = 0.00;
 $monthlyBudget = 0; // Default budget
 $user_id_escaped = mysqli_real_escape_string($conn, $userId);
-$household_query = "SELECT h.household_id, h.monthly_budget, p.provider_name, p.rates FROM HOUSEHOLD h LEFT JOIN ELECTRICITY_PROVIDER p ON h.provider_id = p.provider_id WHERE h.user_id = '$user_id_escaped'";
+$household_query = "SELECT h.household_id, h.monthly_budget, p.provider_name FROM HOUSEHOLD h LEFT JOIN ELECTRICITY_PROVIDER p ON h.provider_id = p.provider_id WHERE h.user_id = '$user_id_escaped'";
 $household_result = executeQuery($household_query);
 
 if ($household_result && $household_result->num_rows > 0) {
@@ -52,8 +54,9 @@ if ($household_result && $household_result->num_rows > 0) {
 
   if (!empty($household_row['provider_name'])) {
     $currentProvider = $household_row['provider_name'];
-    if (!empty($household_row['rates'])) {
-      $currentRate = floatval($household_row['rates']);
+    // Use default rate or get from providerRates array
+    if (isset($providerRates[$currentProvider])) {
+      $currentRate = $providerRates[$currentProvider];
     }
   }
 
