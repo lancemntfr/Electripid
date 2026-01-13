@@ -7,17 +7,18 @@
 
         $cmd = trim($cmd);
 
-        // Only verified users
-        $stmt = $conn->prepare("SELECT user_id FROM USER WHERE cp_number=?");
-        $stmt->bind_param("s", $phone);
-        $stmt->execute();
+        if (preg_match('/^[0-9]{6}$/', $cmd)) {
+            return; // Don't process OTP codes as commands
+        }
 
-        if ($stmt->get_result()->num_rows === 0) {
+        $escaped_phone = mysqli_real_escape_string($conn, $phone);
+        $result = executeQuery("SELECT user_id FROM USER WHERE cp_number='$escaped_phone'");
+
+        if ($result->num_rows === 0) {
             sendSMS($phone, "Number not registered.");
             return;
         }
 
-        // ✅ Numeric commands
         if (preg_match('/^[0-9]{1,2}$/', $cmd)) {
             switch ($cmd) {
                 case '1':
@@ -34,7 +35,6 @@
             }
         }
 
-        // 🟡 Non-numeric input → send menu ONCE
         sendSMS($phone, "Reply:\n1 - Forecast\n2 - Energy Tips");
     }
 ?>
