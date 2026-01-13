@@ -2,37 +2,36 @@
     require_once __DIR__ . '/../../../connect.php';
     require_once __DIR__ . '/send_sms.php';
 
-    function handleSMSCommand($phone, $cmd) {
+    function handleSMSCommand($phone, $text) {
         global $conn;
 
-        $cmd = trim($cmd);
+        $cmd = strtolower(trim($text));
 
-        if (preg_match('/^[0-9]{6}$/', $cmd)) {
-            return; // Don't process OTP codes as commands
+        $lockFile = sys_get_temp_dir() . '/sms_' . md5($phone . '|' . $cmd);
+
+        if (file_exists($lockFile) && (time() - filemtime($lockFile)) < 5) {
+            return;
+        }
+        touch($lockFile);
+
+        if (preg_match('/otp/i', $cmd) && preg_match('/[0-9]{6}/', $cmd)) {
+            return;
         }
 
         $escaped_phone = mysqli_real_escape_string($conn, $phone);
         $result = executeQuery("SELECT user_id FROM USER WHERE cp_number='$escaped_phone'");
 
         if ($result->num_rows === 0) {
-            sendSMS($phone, "Number not registered.");
+            sendSMS($phone, "Number not registered.\nPlease register first.");
             return;
         }
 
-        if (preg_match('/^[0-9]{1,2}$/', $cmd)) {
-            switch ($cmd) {
-                case '1':
-                    sendSMS($phone, "📊 Forecast: Expected usage tomorrow is 3.1 kWh.");
-                    return;
-
-                case '2':
-                    sendSMS($phone, "💡 Tip: Unplug unused appliances.");
-                    return;
-
-                default:
-                    sendSMS($phone, "Reply:\n1 - Forecast\n2 - Energy Tips");
-                    return;
-            }
+        if ($cmd === '1') {
+            sendSMS($phone, "📊 Forecast:\nExpected usage tomorrow is 3.1 kWh.");
+            return;
+        } elseif ($cmd === '2') {
+            sendSMS($phone, "💡 Tip:\nUnplug unused appliances to save energy.");
+            return;
         }
 
         sendSMS($phone, "Reply:\n1 - Forecast\n2 - Energy Tips");
