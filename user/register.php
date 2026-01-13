@@ -14,10 +14,11 @@
     }
 
     // Get electricity providers
-    $providers_result = executeQuery("SELECT provider_id, provider_name FROM electricity_provider ORDER BY provider_name ASC");
+    $providers_query = "SELECT provider_id, provider_name FROM electricity_provider ORDER BY provider_name ASC";
+    $providers_result = executeQuery($providers_query);
     $providers = [];
-    if ($providers_result && mysqli_num_rows($providers_result) > 0) {
-        while ($row = mysqli_fetch_assoc($providers_result)) {
+    if ($providers_result && $providers_result->num_rows > 0) {
+        while ($row = $providers_result->fetch_assoc()) {
             $providers[] = $row;
         }
     }
@@ -74,14 +75,22 @@
             // Insert verification code in DB with NULL user_id
             $stmt = $conn->prepare("INSERT INTO VERIFICATION (user_id, verification_type, verification_code, expires_at) VALUES (NULL, 'email', ?, ?)");
             $stmt->bind_param("ss", $verification_code, $expires_at);
-            $stmt->execute();
+            $result = $stmt->execute();
 
-            // Send email
-            $type = 'verification';
-            sendVerificationEmail($email, $verification_code, $type);
+            if (!$result) {
+                $error_message = "Failed to create verification code. Please try again.";
+            } else {
+                // Store verification_id in session for better tracking
+                $verification_id = $conn->insert_id;
+                $_SESSION['pending_registration']['verification_id'] = $verification_id;
 
-            header('Location: verification/email/verify_email.php');
-            exit;
+                // Send email
+                $type = 'verification';
+                sendVerificationEmail($email, $verification_code, $type);
+
+                header('Location: verification/email/verify_email.php');
+                exit;
+            }
         }
     }
 ?>

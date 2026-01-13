@@ -20,10 +20,14 @@
 
             if (empty($code)) {
                 $error = "Please enter the verification code.";
+            } elseif (!isset($_SESSION['pending_registration']['verification_id'])) {
+                $error = "Session expired. Please start registration again.";
             } else {
-                // Check code in VERIFICATION table
-                $stmt = $conn->prepare("SELECT verification_id, expires_at FROM VERIFICATION WHERE verification_code=? AND verification_type='email' AND is_verified=0");
-                $stmt->bind_param("s", $code);
+                $verification_id = $_SESSION['pending_registration']['verification_id'];
+
+                // Check code in VERIFICATION table using specific verification_id
+                $stmt = $conn->prepare("SELECT verification_id, expires_at FROM VERIFICATION WHERE verification_id=? AND verification_code=? AND verification_type='email' AND is_verified=0");
+                $stmt->bind_param("is", $verification_id, $code);
                 $stmt->execute();
                 $result = $stmt->get_result();
 
@@ -46,6 +50,12 @@
                         );
                         $stmt_insert->execute();
                         $user_id = $conn->insert_id;
+
+                        // Create HOUSEHOLD record for the new user
+                        $provider_id = $pending_data['provider_id'];
+                        $stmt_household = $conn->prepare("INSERT INTO HOUSEHOLD (user_id, provider_id) VALUES (?, ?)");
+                        $stmt_household->bind_param("ii", $user_id, $provider_id);
+                        $stmt_household->execute();
 
                         // Update VERIFICATION table
                         $stmt_update = $conn->prepare("UPDATE VERIFICATION SET user_id=?, is_verified=1 WHERE verification_id=?");

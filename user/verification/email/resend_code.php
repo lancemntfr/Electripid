@@ -15,6 +15,14 @@
         $new_code = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
         $expires_at = date("Y-m-d H:i:s", strtotime("+15 minutes"));
 
+        // Update database with new code if verification_id exists
+        if (isset($pending_data['verification_id'])) {
+            $verification_id = $pending_data['verification_id'];
+            $stmt = $GLOBALS['conn']->prepare("UPDATE VERIFICATION SET verification_code=?, expires_at=? WHERE verification_id=? AND is_verified=0");
+            $stmt->bind_param("ssi", $new_code, $expires_at, $verification_id);
+            $stmt->execute();
+        }
+
         // Update session with new code
         $_SESSION['pending_registration']['verification_code'] = $new_code;
         $_SESSION['pending_registration']['expires_at'] = $expires_at;

@@ -7,41 +7,45 @@ if (!isset($_SESSION['user_id'])) {
   exit;
 }
 
-// Define user variables
 $username = htmlspecialchars($_SESSION['username'] ?? 'User');
 $userInitial = isset($_SESSION['username']) ? strtoupper(substr($_SESSION['username'], 0, 1)) : 'U';
 $email = htmlspecialchars($_SESSION['email'] ?? 'user@example.com');
 $userId = $_SESSION['user_id'];
 
-// Load appliances from database
-$appliances = [];
-$currentProvider = 'Meralco';
-$currentRate = 13.01;
-$user_id = mysqli_real_escape_string($conn, $userId);
-$household_query = "SELECT h.household_id, p.provider_name FROM HOUSEHOLD h 
-                    LEFT JOIN ELECTRICITY_PROVIDER p ON h.provider_id = p.provider_id 
-                    WHERE h.user_id = '$user_id'";
-$household_result = mysqli_query($conn, $household_query);
+$provider_query = "SELECT provider_name, rates FROM ELECTRICITY_PROVIDER";
+$provider_result = executeQuery($provider_query);
+$providerRates = [];
+while ($row = $provider_result->fetch_assoc()) {
+  $providerRates[$row['provider_name']] = floatval($row['rates']);
+}
 
-if ($household_result && mysqli_num_rows($household_result) > 0) {
-  $household_row = mysqli_fetch_assoc($household_result);
+$appliances = [];
+$currentProvider = '';
+$currentRate = 0.00;
+$monthlyBudget = 0; // Default budget
+$user_id_escaped = mysqli_real_escape_string($conn, $userId);
+$household_query = "SELECT h.household_id, h.monthly_budget, p.provider_name, p.rates FROM HOUSEHOLD h
+                    LEFT JOIN ELECTRICITY_PROVIDER p ON h.provider_id = p.provider_id
+                    WHERE h.user_id = '$user_id_escaped'";
+$household_result = executeQuery($household_query);
+
+if ($household_result && $household_result->num_rows > 0) {
+  $household_row = $household_result->fetch_assoc();
   $household_id = mysqli_real_escape_string($conn, $household_row['household_id']);
-  
-  // Get provider and set rate
+
   if (!empty($household_row['provider_name'])) {
     $currentProvider = $household_row['provider_name'];
-    // Set rate based on provider
-    if ($currentProvider == 'Meralco') {
-      $currentRate = 13.01;
-    } elseif ($currentProvider == 'BATELEC I' || $currentProvider == 'Batelec 1') {
-      $currentRate = 10.08;
-    } elseif ($currentProvider == 'BATELEC II' || $currentProvider == 'Batelec 2') {
-      $currentRate = 9.90;
+    if (!empty($household_row['rates'])) {
+      $currentRate = floatval($household_row['rates']);
     }
   }
 
+  if (!empty($household_row['monthly_budget'])) {
+    $monthlyBudget = floatval($household_row['monthly_budget']);
+  }
+
   $appliance_query = "SELECT * FROM APPLIANCE WHERE household_id = '$household_id'";
-  $appliance_result = mysqli_query($conn, $appliance_query);
+  $appliance_result = executeQuery($appliance_query);
 
   if ($appliance_result) {
     while ($row = mysqli_fetch_assoc($appliance_result)) {
@@ -124,7 +128,7 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
             <i class="bi bi-wallet2"></i>
           </div>
           <h6 class="text-muted mb-1">Monthly Budget</h6>
-          <h4 class="mb-0">₱<span id="monthlyBudget">5,000</span></h4>
+          <h4 class="mb-0">₱<span id="monthlyBudget"><?php echo number_format($monthlyBudget); ?></span></h4>
         </div>
       </div>
       <div class="col-lg-3 col-md-6">
@@ -468,6 +472,8 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
     let appliances = <?php echo json_encode($appliances); ?>;
     let currentRate = <?php echo $currentRate; ?>;
     let currentProvider = <?php echo json_encode($currentProvider); ?>;
+    let monthlyBudget = <?php echo $monthlyBudget; ?>;
+    let householdId = <?php echo isset($household_id) ? json_encode($household_id) : 'null'; ?>;
     let forecastChart = null;
     const WEATHER_API_KEY = 'a4ad5de980d109abed0fec591eefd391';
     let currentLocation = 'Batangas';
@@ -476,14 +482,8 @@ if ($household_result && mysqli_num_rows($household_result) > 0) {
 
     const USD_RATE = 59; // 1 USD ≈ 59 PHP
 
-    // Provider rates mapping
-    const providerRates = {
-      "Meralco": 13.01,
-      "BATELEC I": 10.08,
-      "Batelec 1": 10.08,
-      "BATELEC II": 9.90,
-      "Batelec 2": 9.90
-    };
+    // Provider rates from database
+    const providerRates = <?php echo json_encode($providerRates); ?>;
 
     // Update rate when provider changes
     if (currentProvider && providerRates[currentProvider]) {
