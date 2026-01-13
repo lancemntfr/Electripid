@@ -319,7 +319,7 @@ if ($household_result && $household_result->num_rows > 0) {
     <div class="chatbot-container bg-white d-flex flex-column shadow-lg" style="border-radius: 16px 16px 0 0;">
 
       <!-- Header -->
-      <div class="chatbot-header d-flex justify-content-between align-items-center p-3 text-white rounded-top" style="background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%);">
+      <div class="chatbot-header d-flex justify-content-between align-items-center p-3 text-white rounded-top" style="background: #1E88E5 !important;">
         <div>
           <h5 class="mb-0"><span style="color: #00c853;">⚡</span> Electripid AI Assistant</h5>
           <p class="mb-0 small opacity-75" style="font-size: 0.7rem;">Powered by Ollama</p>
@@ -337,7 +337,7 @@ if ($household_result && $household_result->num_rows > 0) {
       <!-- Messages Area -->
       <div class="chatbot-messages flex-fill p-3 overflow-auto" id="chatbotMessages" style="background: #f8f9fa;">
         <div class="bot-message d-flex gap-2 mb-3">
-          <div class="message-avatar rounded-circle d-flex align-items-center justify-content-center" style="flex-shrink: 0; width: 30px; height: 30px; background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%); color: white; font-size: 0.9rem;">🤖</div>
+          <div class="message-avatar rounded-circle d-flex align-items-center justify-content-center" style="flex-shrink: 0; width: 30px; height: 30px; background: #1E88E5 !important; color: white; font-size: 0.9rem;">🤖</div>
           <div class="message-content bg-white p-2 rounded-3 small shadow-sm">
             Hello! I'm your Electripid assistant powered by AI. I can help you with:
             <br>• Energy consumption analysis
@@ -361,7 +361,7 @@ if ($household_result && $household_result->num_rows > 0) {
         <button
           class="btn text-white rounded-circle d-flex align-items-center justify-content-center"
           onclick="sendMessage()"
-          style="width: 38px; height: 38px; background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%); border: none;">
+          style="width: 38px; height: 38px; background: #1E88E5 !important; border: none;">
           <i class="bi bi-send-fill"></i>
         </button>
       </div>
@@ -940,8 +940,8 @@ if ($household_result && $household_result->num_rows > 0) {
       const avatar = sender === 'user' ? '👤' : '🤖';
 
       messageDiv.innerHTML = `
-    <div class="message-avatar rounded-circle d-flex align-items-center justify-content-center" style="flex-shrink: 0; width: 30px; height: 30px; ${sender === 'user' ? 'background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%);' : 'background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%);'} color: white; font-size: 0.9rem;">${avatar}</div>
-    <div class="message-content ${sender === 'user' ? 'text-white' : 'bg-white'}" style="${sender === 'user' ? 'background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%);' : ''} p-2 rounded-3 small; max-width: 75%; word-wrap: break-word;">${escapeHtml(message)}</div>
+    <div class="message-avatar rounded-circle d-flex align-items-center justify-content-center" style="flex-shrink: 0; width: 30px; height: 30px; background: #1E88E5 !important; color: white; font-size: 0.9rem;">${avatar}</div>
+    <div class="message-content ${sender === 'user' ? 'text-white' : 'bg-white'} p-2 ${sender === 'user' ? '' : 'rounded-3'} small" style="${sender === 'user' ? 'background: #1E88E5 !important; border-radius: 25px;' : ''} max-width: 75%; word-wrap: break-word;">${escapeHtml(message)}</div>
   `;
 
       messagesContainer.appendChild(messageDiv);
@@ -963,7 +963,7 @@ if ($household_result && $household_result->num_rows > 0) {
       typingDiv.className = 'bot-message typing-indicator-container d-flex gap-3 mb-4';
       typingDiv.id = 'typingIndicator';
       typingDiv.innerHTML = `
-    <div class="message-avatar rounded-circle d-flex align-items-center justify-content-center" style="flex-shrink: 0; width: 30px; height: 30px; background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%); color: white; font-size: 0.9rem;">🤖</div>
+    <div class="message-avatar rounded-circle d-flex align-items-center justify-content-center" style="flex-shrink: 0; width: 30px; height: 30px; background: #1E88E5 !important; color: white; font-size: 0.9rem;">🤖</div>
     <div class="typing-indicator d-flex gap-1 p-2 bg-light rounded-3">
       <div class="typing-dot rounded-circle bg-secondary" style="width: 6px; height: 6px; animation: typing 1.4s infinite;"></div>
       <div class="typing-dot rounded-circle bg-secondary" style="width: 6px; height: 6px; animation: typing 1.4s infinite 0.2s;"></div>

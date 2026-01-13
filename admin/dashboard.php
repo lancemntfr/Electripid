@@ -84,7 +84,7 @@ if ($page === 'donations') {
         <i class="bi bi-cash-coin"></i>
         <small class="d-none d-md-inline ms-1">Donation</small>
       </a>
-      <a href="logout.php" class="btn btn-outline-danger btn-sm">
+      <a href="logout.php" class="btn btn-logout btn-sm">
         <i class="bi bi-box-arrow-right me-1"></i>Logout
       </a>
     </div>
@@ -98,21 +98,21 @@ if ($page === 'donations') {
 
 <div class="row g-4 mb-4">
   <div class="col-lg-6 col-md-6">
-    <div class="info-card h-100 d-flex flex-column">
-      <div class="info-card-icon bg-success bg-opacity-10 text-success">
+    <div class="info-card info-card-static h-100 d-flex flex-column">
+      <div class="info-card-icon bg-light text-success">
         <i class="bi bi-people-fill"></i>
       </div>
-      <h6 class="text-muted mb-1">Total Users</h6>
-      <h4 class="mb-0"><?= $totalUsers ?></h4>
+      <h6 class="text-muted mb-1 info-card-title">Total Users</h6>
+      <h4 class="mb-0 info-card-value"><?= $totalUsers ?></h4>
     </div>
   </div>
   <div class="col-lg-6 col-md-6">
-    <div class="info-card h-100 d-flex flex-column">
-      <div class="info-card-icon bg-success bg-opacity-10 text-success">
+    <div class="info-card info-card-static h-100 d-flex flex-column">
+      <div class="info-card-icon bg-light text-success">
         <i class="bi bi-check-circle-fill"></i>
       </div>
-      <h6 class="text-muted mb-1">Active Users</h6>
-      <h4 class="mb-0 text-success"><?= $activeUsers ?></h4>
+      <h6 class="text-muted mb-1 info-card-title">Active Users</h6>
+      <h4 class="mb-0 info-card-value"><?= $activeUsers ?></h4>
     </div>
   </div>
 </div>
@@ -187,19 +187,19 @@ if ($page === 'donations') {
 <div class="row g-4 mb-4">
   <div class="col-lg-4 col-md-12">
     <div class="d-flex flex-column h-100">
-      <div class="info-card d-flex flex-column py-5" style="flex: 1;">
-        <div class="info-card-icon bg-success bg-opacity-10 text-success">
+      <div class="info-card info-card-static d-flex flex-column py-5" style="flex: 1;">
+        <div class="info-card-icon bg-light text-success">
           <i class="bi bi-cash-stack"></i>
         </div>
-        <h6 class="text-muted mb-1">Total Donation</h6>
-        <h4 class="mb-0 text-success">₱<?= number_format($totalDonation,2) ?></h4>
+        <h6 class="text-muted mb-1 info-card-title">Total Donation</h6>
+        <h4 class="mb-0 info-card-value">₱<?= number_format($totalDonation,2) ?></h4>
       </div>
-      <div class="info-card d-flex flex-column py-5 mb-0" style="flex: 1;">
-        <div class="info-card-icon bg-success bg-opacity-10 text-success">
+      <div class="info-card info-card-static d-flex flex-column py-5 mb-0" style="flex: 1;">
+        <div class="info-card-icon bg-light text-success">
           <i class="bi bi-people-fill"></i>
         </div>
-        <h6 class="text-muted mb-1">Total Donors</h6>
-        <h4 class="mb-0"><?= $totalDonors ?></h4>
+        <h6 class="text-muted mb-1 info-card-title">Total Donors</h6>
+        <h4 class="mb-0 info-card-value"><?= $totalDonors ?></h4>
       </div>
     </div>
   </div>
