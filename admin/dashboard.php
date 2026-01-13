@@ -59,40 +59,31 @@ if ($page === 'donations') {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 <link rel="stylesheet" href="../assets/css/admin.css">
-
-<style>
-body { background:#f4f6f9; }
-.card { border:none; border-radius:18px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-.nav-icon { text-decoration:none; color:#6c757d; transition:all 0.2s; }
-.nav-icon:hover { color:#0d6efd; }
-.nav-icon.active { color:#0d6efd; font-weight:600; }
-</style>
 </head>
 
 <body>
 
 <!-- NAVBAR -->
-<nav class="navbar bg-white shadow-sm mb-4">
-  <div class="container-fluid px-4">
-    <span class="fw-bold fs-5">
-      <i class="bi bi-lightning-fill text-warning me-2"></i>Admin Dashboard
-    </span>
-
-    <div class="d-flex gap-4 align-items-center">
+<nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm" style="border-radius: 0 !important;">
+  <div class="container">
+    <a class="navbar-brand fw-bold fs-4" href="#" style="color: #1E88E5 !important;">
+      <i class="bi bi-lightning-charge-fill me-2" style="color: #00bfa5;"></i>Admin
+    </a>
+    <div class="d-flex align-items-center">
       <a href="?page=users"
-         class="nav-icon <?= $page==='users'?'active':'' ?>">
-        <i class="bi bi-people fs-5"></i>
+         class="nav-icon position-relative me-3 <?= $page==='users'?'active':'' ?>" 
+         title="Users">
+        <i class="bi bi-people"></i>
         <small class="d-none d-md-inline ms-1">Users</small>
       </a>
-
       <a href="?page=donations"
-         class="nav-icon <?= $page==='donations'?'active':'' ?>">
-        <i class="bi bi-cash-coin fs-5"></i>
-        <small class="d-none d-md-inline ms-1">Donations</small>
+         class="nav-icon position-relative me-3 <?= $page==='donations'?'active':'' ?>" 
+         title="Donations">
+        <i class="bi bi-cash-coin"></i>
+        <small class="d-none d-md-inline ms-1">Donation</small>
       </a>
-
       <a href="logout.php" class="btn btn-outline-danger btn-sm">
         <i class="bi bi-box-arrow-right me-1"></i>Logout
       </a>
@@ -100,35 +91,39 @@ body { background:#f4f6f9; }
   </div>
 </nav>
 
-<div class="container">
+<div class="container px-5 py-4 mt-4">
 
 <?php if ($page === 'users'): ?>
 <!-- ================= USERS VIEW ================= -->
 
-<div class="row g-3 mb-4">
-  <div class="col-md-6">
-    <div class="card p-4">
-      <small class="text-muted">Total Users</small>
-      <h3 class="mb-0 mt-2"><?= $totalUsers ?></h3>
-      <small class="text-success"><i class="bi bi-people-fill"></i> All registered</small>
+<div class="row g-4 mb-4">
+  <div class="col-lg-6 col-md-6">
+    <div class="info-card h-100 d-flex flex-column">
+      <div class="info-card-icon bg-success bg-opacity-10 text-success">
+        <i class="bi bi-people-fill"></i>
+      </div>
+      <h6 class="text-muted mb-1">Total Users</h6>
+      <h4 class="mb-0"><?= $totalUsers ?></h4>
     </div>
   </div>
-  <div class="col-md-6">
-    <div class="card p-4">
-      <small class="text-muted">Active Users</small>
-      <h3 class="mb-0 mt-2 text-success"><?= $activeUsers ?></h3>
-      <small class="text-muted"><i class="bi bi-check-circle-fill"></i> Currently active</small>
+  <div class="col-lg-6 col-md-6">
+    <div class="info-card h-100 d-flex flex-column">
+      <div class="info-card-icon bg-success bg-opacity-10 text-success">
+        <i class="bi bi-check-circle-fill"></i>
+      </div>
+      <h6 class="text-muted mb-1">Active Users</h6>
+      <h4 class="mb-0 text-success"><?= $activeUsers ?></h4>
     </div>
   </div>
 </div>
 
-<div class="card p-4">
+<div class="chart-container h-100 d-flex flex-column">
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="mb-0"><i class="bi bi-people me-2"></i>User Management</h5>
+    <h5 class="mb-0"><i class="bi bi-search me-2"></i>Search Users</h5>
     <div class="d-flex gap-2">
       <input class="form-control" style="width:250px" placeholder="🔍 Search users...">
       <button class="btn btn-outline-secondary">
-        <i class="bi bi-funnel"></i> Filter
+        <i class="bi bi-funnel"></i> SORT
       </button>
     </div>
   </div>
@@ -189,36 +184,42 @@ body { background:#f4f6f9; }
 <?php elseif ($page === 'donations'): ?>
 <!-- ================= DONATIONS VIEW ================= -->
 
-<div class="row g-3 mb-4">
-  <div class="col-md-6">
-    <div class="card p-4">
-      <small class="text-muted">Total Donations</small>
-      <h3 class="mb-0 mt-2 text-success">₱<?= number_format($totalDonation,2) ?></h3>
-      <small class="text-muted"><i class="bi bi-cash-stack"></i> All completed</small>
+<div class="row g-4 mb-4">
+  <div class="col-lg-4 col-md-12">
+    <div class="d-flex flex-column h-100">
+      <div class="info-card d-flex flex-column py-5" style="flex: 1;">
+        <div class="info-card-icon bg-success bg-opacity-10 text-success">
+          <i class="bi bi-cash-stack"></i>
+        </div>
+        <h6 class="text-muted mb-1">Total Donation</h6>
+        <h4 class="mb-0 text-success">₱<?= number_format($totalDonation,2) ?></h4>
+      </div>
+      <div class="info-card d-flex flex-column py-5 mb-0" style="flex: 1;">
+        <div class="info-card-icon bg-success bg-opacity-10 text-success">
+          <i class="bi bi-people-fill"></i>
+        </div>
+        <h6 class="text-muted mb-1">Total Donors</h6>
+        <h4 class="mb-0"><?= $totalDonors ?></h4>
+      </div>
     </div>
   </div>
-  <div class="col-md-6">
-    <div class="card p-4">
-      <small class="text-muted">Total Donors</small>
-      <h3 class="mb-0 mt-2"><?= $totalDonors ?></h3>
-      <small class="text-muted"><i class="bi bi-people-fill"></i> Unique contributors</small>
+  
+  <div class="col-lg-8 col-md-12">
+    <div class="chart-container h-100 d-flex flex-column">
+      <h5 class="mb-3"><i class="bi bi-graph-up me-2"></i>Monthly Donation</h5>
+      <div class="d-flex align-items-center justify-content-center h-100">
+        <div class="text-center text-muted">
+          <i class="bi bi-bar-chart-line fs-1 mb-3 d-block"></i>
+          <p>Chart visualization will be displayed here</p>
+          <small>Track donation patterns over time</small>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
-<div class="card p-4 mb-4" style="min-height:260px">
-  <h5 class="mb-3"><i class="bi bi-graph-up me-2"></i>Monthly Donation Trends</h5>
-  <div class="d-flex align-items-center justify-content-center h-100">
-    <div class="text-center text-muted">
-      <i class="bi bi-bar-chart-line fs-1 mb-3 d-block"></i>
-      <p>Chart visualization will be displayed here</p>
-      <small>Track donation patterns over time</small>
-    </div>
-  </div>
-</div>
-
-<div class="card p-4">
-  <h5 class="mb-3"><i class="bi bi-list-ul me-2"></i>Donation History</h5>
+<div class="chart-container h-100 d-flex flex-column">
+  <h5 class="mb-3"><i class="bi bi-list-ul me-2"></i>List of Donors</h5>
 
   <div class="table-responsive">
     <table class="table table-hover align-middle">
