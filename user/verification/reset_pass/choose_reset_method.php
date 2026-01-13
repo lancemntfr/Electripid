@@ -14,16 +14,13 @@
     // Get phone number if available and mask it
     if ($hasPhone) {
         $user_id = $_SESSION['fp_user_id'];
-        $stmt = $conn->prepare("SELECT cp_number FROM USER WHERE user_id=?");
-        $stmt->bind_param("i", $user_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
+        $user_id_int = (int) $user_id;
+        $result = executeQuery("SELECT cp_number FROM USER WHERE user_id={$user_id_int}");
         
         if ($result->num_rows > 0) {
             $user = $result->fetch_assoc();
             $phone = $user['cp_number'] ?? '';
             
-            // Mask phone number: 09** *** **45 format
             if (!empty($phone) && strlen($phone) >= 11) {
                 $maskedPhone = substr($phone, 0, 2) . '** *** **' . substr($phone, -2);
             } elseif (!empty($phone) && strlen($phone) >= 10) {
