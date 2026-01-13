@@ -488,7 +488,7 @@
             };
             
             try {
-                const response = await fetch('appliances/update_profile.php', {
+                const response = await fetch('settings/update_profile.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

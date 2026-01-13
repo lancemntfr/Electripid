@@ -5,21 +5,24 @@
     require_once __DIR__ . '/../../connect.php';
     require_once __DIR__ . '/../includes/validation.php';
 
+    // Validate request
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        echo json_encode(['success' => false, 'error' => 'Invalid request method']);
-        exit;
+        response(['success' => false, 'error' => 'Invalid request method']);
     }
 
     if (!isset($_SESSION['user_id'])) {
-        echo json_encode(['success' => false, 'error' => 'Not authenticated']);
-        exit;
+        response(['success' => false, 'error' => 'Not authenticated']);
     }
 
     $user_id = $_SESSION['user_id'];
     $data = json_decode(file_get_contents('php://input'), true);
 
     if (!$data) {
-        echo json_encode(['success' => false, 'error' => 'Invalid JSON data']);
+        response(['success' => false, 'error' => 'Invalid JSON data']);
+    }
+
+    function response($data) {
+        echo json_encode($data);
         exit;
     }
 
@@ -34,14 +37,12 @@
 
     // Validate required fields
     if (empty($fname) || empty($lname) || empty($email) || empty($city) || empty($barangay)) {
-        echo json_encode(['success' => false, 'error' => 'Please fill in all required fields.']);
-        exit;
+        response(['success' => false, 'error' => 'Please fill in all required fields.']);
     }
 
     // Validate email format
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        echo json_encode(['success' => false, 'error' => 'Please enter a valid email address.']);
-        exit;
+        response(['success' => false, 'error' => 'Please enter a valid email address.']);
     }
 
     // Check if email is being changed and if new email already exists
@@ -50,8 +51,7 @@
     $current_user_result = executeQuery($current_user_query);
     
     if (!$current_user_result || mysqli_num_rows($current_user_result) === 0) {
-        echo json_encode(['success' => false, 'error' => 'User not found.']);
-        exit;
+        response(['success' => false, 'error' => 'User not found.']);
     }
     
     $current_user = mysqli_fetch_assoc($current_user_result);
@@ -63,14 +63,14 @@
         $check_email_result = executeQuery($check_email_query);
         
         if ($check_email_result && mysqli_num_rows($check_email_result) > 0) {
-            echo json_encode(['success' => false, 'error' => 'Email address is already registered.']);
+            response(['success' => false, 'error' => 'Email address is already registered.']);
             exit;
         }
     }
 
     // Validate provider
     if ($provider_id <= 0) {
-        echo json_encode(['success' => false, 'error' => 'Please select an electricity provider.']);
+        response(['success' => false, 'error' => 'Please select an electricity provider.']);
         exit;
     }
 
@@ -79,7 +79,7 @@
     $check_provider_result = executeQuery($check_provider_query);
     
     if (!$check_provider_result || mysqli_num_rows($check_provider_result) === 0) {
-        echo json_encode(['success' => false, 'error' => 'Invalid electricity provider.']);
+        response(['success' => false, 'error' => 'Invalid electricity provider.']);
         exit;
     }
 
@@ -87,7 +87,7 @@
     if (!empty($password)) {
         $passwordValidation = validatePassword($password, $confirm_password);
         if (!$passwordValidation['valid']) {
-            echo json_encode(['success' => false, 'error' => $passwordValidation['error']]);
+            response(['success' => false, 'error' => $passwordValidation['error']]);
             exit;
         }
     }
@@ -114,7 +114,7 @@
     $update_user_result = executeQuery($update_user_query);
     
     if (!$update_user_result) {
-        echo json_encode(['success' => false, 'error' => 'Failed to update profile.']);
+        response(['success' => false, 'error' => 'Failed to update profile.']);
         exit;
     }
 
@@ -130,7 +130,7 @@
         $update_household_result = executeQuery($update_household_query);
         
         if (!$update_household_result) {
-            echo json_encode(['success' => false, 'error' => 'Failed to update household settings.']);
+            response(['success' => false, 'error' => 'Failed to update household settings.']);
             exit;
         }
     } else {
@@ -139,7 +139,7 @@
         $insert_household_result = executeQuery($insert_household_query);
         
         if (!$insert_household_result) {
-            echo json_encode(['success' => false, 'error' => 'Failed to create household settings.']);
+            response(['success' => false, 'error' => 'Failed to create household settings.']);
             exit;
         }
     }
@@ -149,7 +149,7 @@
     $_SESSION['lname'] = $lname;
     $_SESSION['email'] = $email;
 
-    echo json_encode(['success' => true, 'message' => 'Profile updated successfully']);
+    response(['success' => true, 'message' => 'Profile updated successfully']);
     
     $conn->close();
 ?>

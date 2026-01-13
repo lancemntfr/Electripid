@@ -24,9 +24,7 @@ $currentProvider = '';
 $currentRate = 0.00;
 $monthlyBudget = 0; // Default budget
 $user_id_escaped = mysqli_real_escape_string($conn, $userId);
-$household_query = "SELECT h.household_id, h.monthly_budget, p.provider_name, p.rates FROM HOUSEHOLD h
-                    LEFT JOIN ELECTRICITY_PROVIDER p ON h.provider_id = p.provider_id
-                    WHERE h.user_id = '$user_id_escaped'";
+$household_query = "SELECT h.household_id, h.monthly_budget, p.provider_name, p.rates FROM HOUSEHOLD h LEFT JOIN ELECTRICITY_PROVIDER p ON h.provider_id = p.provider_id WHERE h.user_id = '$user_id_escaped'";
 $household_result = executeQuery($household_query);
 
 if ($household_result && $household_result->num_rows > 0) {
@@ -44,7 +42,7 @@ if ($household_result && $household_result->num_rows > 0) {
     $monthlyBudget = floatval($household_row['monthly_budget']);
   }
 
-  $appliance_query = "SELECT * FROM APPLIANCE WHERE household_id = '$household_id'";
+  $appliance_query = "SELECT * FROM APPLIANCE WHERE household_id = '$household_id' ORDER BY appliance_id DESC";
   $appliance_result = executeQuery($appliance_query);
 
   if ($appliance_result) {
@@ -497,6 +495,27 @@ if ($household_result && $household_result->num_rows > 0) {
       loadAppliances();
     });
 
+    // Helper function for weather icon color filtering
+    function getWeatherIconFilter(condition, description) {
+      const cond = condition.toLowerCase();
+      const desc = description.toLowerCase();
+
+      if (cond.includes('cloud') || desc.includes('cloud')) {
+        return 'brightness(0) saturate(100%) invert(40%) sepia(100%) saturate(2000%) hue-rotate(200deg) brightness(0.9)'; // Blue
+      } else if (cond.includes('rain') || desc.includes('rain') || desc.includes('drizzle')) {
+        return 'brightness(0) saturate(100%) invert(40%) sepia(100%) saturate(2000%) hue-rotate(200deg) brightness(0.8)'; // Darker blue
+      } else if (cond.includes('clear') || desc.includes('clear') || desc.includes('sun')) {
+        return 'brightness(0) saturate(100%) invert(80%) sepia(100%) saturate(2000%) hue-rotate(0deg) brightness(1.1)'; // Yellow/Orange
+      } else if (cond.includes('snow')) {
+        return 'brightness(0) saturate(100%) invert(100%)'; // White
+      } else if (cond.includes('thunder') || desc.includes('thunder')) {
+        return 'brightness(0) saturate(100%) invert(20%) sepia(100%) saturate(2000%) hue-rotate(250deg)'; // Purple
+      } else if (cond.includes('mist') || cond.includes('fog') || desc.includes('mist') || desc.includes('fog')) {
+        return 'brightness(0) saturate(100%) invert(90%)'; // Light gray
+      }
+      return '';
+    }
+
     // Weather functions
     async function fetchWeather() {
       try {
@@ -524,26 +543,8 @@ if ($household_result && $household_result->num_rows > 0) {
       const iconCode = current.weather[0].icon;
       const weatherIcon = document.querySelector('#weatherIcon img');
       weatherIcon.src = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
-      
-      // Add color filter based on weather condition
-      const condition = current.weather[0].main.toLowerCase();
-      const description = current.weather[0].description.toLowerCase();
-      let filterColor = '';
-      
-      if (condition.includes('cloud') || description.includes('cloud')) {
-        filterColor = 'brightness(0) saturate(100%) invert(40%) sepia(100%) saturate(2000%) hue-rotate(200deg) brightness(0.9)'; // Blue
-      } else if (condition.includes('rain') || description.includes('rain') || description.includes('drizzle')) {
-        filterColor = 'brightness(0) saturate(100%) invert(40%) sepia(100%) saturate(2000%) hue-rotate(200deg) brightness(0.8)'; // Darker blue
-      } else if (condition.includes('clear') || description.includes('clear') || description.includes('sun')) {
-        filterColor = 'brightness(0) saturate(100%) invert(80%) sepia(100%) saturate(2000%) hue-rotate(0deg) brightness(1.1)'; // Yellow/Orange
-      } else if (condition.includes('snow')) {
-        filterColor = 'brightness(0) saturate(100%) invert(100%)'; // White
-      } else if (condition.includes('thunder') || description.includes('thunder')) {
-        filterColor = 'brightness(0) saturate(100%) invert(20%) sepia(100%) saturate(2000%) hue-rotate(250deg)'; // Purple
-      } else if (condition.includes('mist') || condition.includes('fog') || description.includes('mist') || description.includes('fog')) {
-        filterColor = 'brightness(0) saturate(100%) invert(90%)'; // Light gray
-      }
-      
+
+      const filterColor = getWeatherIconFilter(current.weather[0].main, current.weather[0].description);
       if (filterColor) {
         weatherIcon.style.filter = filterColor;
       }
@@ -570,24 +571,7 @@ if ($household_result && $household_result->num_rows > 0) {
         const item = forecastByDay[day];
         const iconCode = item.weather[0].icon;
         const temp = Math.round(item.main.temp);
-        const condition = item.weather[0].main.toLowerCase();
-        const description = item.weather[0].description.toLowerCase();
-        
-        // Determine color filter based on weather condition
-        let filterColor = '';
-        if (condition.includes('cloud') || description.includes('cloud')) {
-          filterColor = 'brightness(0) saturate(100%) invert(40%) sepia(100%) saturate(2000%) hue-rotate(200deg) brightness(0.9)'; // Blue
-        } else if (condition.includes('rain') || description.includes('rain') || description.includes('drizzle')) {
-          filterColor = 'brightness(0) saturate(100%) invert(40%) sepia(100%) saturate(2000%) hue-rotate(200deg) brightness(0.8)'; // Darker blue
-        } else if (condition.includes('clear') || description.includes('clear') || description.includes('sun')) {
-          filterColor = 'brightness(0) saturate(100%) invert(80%) sepia(100%) saturate(2000%) hue-rotate(0deg) brightness(1.1)'; // Yellow/Orange
-        } else if (condition.includes('snow')) {
-          filterColor = 'brightness(0) saturate(100%) invert(100%)'; // White
-        } else if (condition.includes('thunder') || description.includes('thunder')) {
-          filterColor = 'brightness(0) saturate(100%) invert(20%) sepia(100%) saturate(2000%) hue-rotate(250deg)'; // Purple
-        } else if (condition.includes('mist') || condition.includes('fog') || description.includes('mist') || description.includes('fog')) {
-          filterColor = 'brightness(0) saturate(100%) invert(90%)'; // Light gray
-        }
+        const filterColor = getWeatherIconFilter(item.weather[0].main, item.weather[0].description);
 
         const dayDiv = document.createElement('div');
         dayDiv.classList.add('forecast-day');
@@ -866,7 +850,7 @@ if ($household_result && $household_result->num_rows > 0) {
 
 
     async function sendMessage() {
-      removeTypingIndicator(); // ← ADD THIS LINE FIRST
+      removeTypingIndicator();
 
       const input = document.getElementById('chatInput');
       const message = input.value.trim();
@@ -914,7 +898,7 @@ if ($household_result && $household_result->num_rows > 0) {
         }
       } catch (error) {
         console.error('Chatbot error:', error);
-        removeTypingIndicator(); // REQUIRED
+        removeTypingIndicator();
         isChatbotLoading = false;
         addMessageToChat('Network error. Please try again.', 'bot');
       }
@@ -1013,7 +997,9 @@ if ($household_result && $household_result->num_rows > 0) {
     }
 
     // Appliance Functions
-    async function loadAppliances() {
+    function loadAppliances() {
+      console.log('loadAppliances called with', appliances.length, 'appliances');
+      // Process appliance data (calculate monthly usage, normalize names)
       appliances = appliances.map(app => {
         if (!app.monthly_kwh && app.power_kwh && app.hours_per_day && app.usage_per_week) {
           app.monthly_kwh = parseFloat(app.power_kwh) * parseFloat(app.hours_per_day) * parseFloat(app.usage_per_week) * 4.33;
@@ -1023,7 +1009,25 @@ if ($household_result && $household_result->num_rows > 0) {
         }
         return app;
       });
+      console.log('Processed appliances:', appliances.length);
       updateAllMetrics();
+    }
+
+    async function refreshAppliances() {
+      try {
+        const response = await fetch('appliances/get_appliances.php');
+        const result = await response.json();
+
+        if (result.success) {
+          appliances = result.appliances;
+          loadAppliances();
+          console.log('Appliances refreshed:', appliances.length, 'appliances');
+        } else {
+          console.error('Failed to refresh appliances:', result.error);
+        }
+      } catch (error) {
+        console.error('Error refreshing appliances:', error);
+      }
     }
 
     async function addAppliance() {
@@ -1037,79 +1041,53 @@ if ($household_result && $household_result->num_rows > 0) {
         return;
       }
 
-      try {
-        const response = await fetch('appliances/save_appliance.php', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            user_id: userId,
-            name: name,
-            power: power,
-            hours: hours,
-            usage_per_week: usagePerWeek,
-            rate: currentRate
-          })
-        });
+      const response = await fetch('appliances/save_appliance.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          name: name,
+          power: power,
+          hours: hours,
+          usage_per_week: usagePerWeek,
+          rate: currentRate
+        })
+      });
 
-        const text = await response.text();
-        let result;
-        
-        try {
-          result = JSON.parse(text);
-        } catch (e) {
-          console.error('Invalid JSON response:', text);
-          console.error('Error:', e);
-          return;
-        }
+      const result = await response.json();
 
-        if (result.success) {
-          document.getElementById('deviceName').value = '';
-          document.getElementById('devicePower').value = '';
-          document.getElementById('deviceHours').value = '';
-          document.getElementById('deviceUsagePerWeek').value = '';
-          location.reload();
-        } else {
-          console.error('Error adding appliance:', result.error);
-        }
-      } catch (error) {
-        console.error('Error:', error);
+      if (result.success) {
+        console.log('Appliance added successfully, refreshing...');
+        // Clear form and refresh appliances
+        document.getElementById('deviceName').value = '';
+        document.getElementById('devicePower').value = '';
+        document.getElementById('deviceHours').value = '';
+        document.getElementById('deviceUsagePerWeek').value = '';
+
+        await refreshAppliances();
+      } else {
+        console.error('Error adding appliance:', result.error);
+        alert('Error: ' + (result.error || 'Failed to add appliance'));
       }
     }
 
     async function removeApplianceDB(applianceId) {
       if (confirm('Are you sure you want to remove this appliance?')) {
-        try {
-          const response = await fetch('appliances/remove_appliance.php', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              appliance_id: applianceId,
-              user_id: userId
-            })
-          });
+        const response = await fetch('appliances/remove_appliance.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            appliance_id: applianceId,
+            user_id: userId
+          })
+        });
 
-          const text = await response.text();
-          let result;
-          
-          try {
-            result = JSON.parse(text);
-          } catch (e) {
-            console.error('Invalid JSON response:', text);
-            console.error('Error:', e);
-            return;
-          }
+        const result = await response.json();
 
-          if (result.success) {
-            location.reload();
-          } else {
-            console.error('Error removing appliance:', result.error);
-          }
-        } catch (error) {
-          console.error('Error:', error);
+        if (result.success) {
+          await refreshAppliances();
+        } else {
+          alert('Error: ' + (result.error || 'Failed to remove appliance'));
         }
       }
     }
@@ -1262,15 +1240,24 @@ if ($household_result && $household_result->num_rows > 0) {
     }
 
     function updateApplianceDisplay() {
+      console.log('updateApplianceDisplay called');
       const container = document.getElementById('applianceDisplayList');
-      if (!container) return;
+      if (!container) {
+        console.error('Container not found!');
+        return;
+      }
 
+      console.log('Displaying', appliances.length, 'appliances');
       if (appliances.length === 0) {
         container.innerHTML = '<div class="text-center text-muted small py-3">No appliances tracked yet. Add one to get started!</div>';
         return;
       }
 
-      container.innerHTML = appliances.map(app => {
+      // Sort appliances by ID descending (newest first)
+      const sortedAppliances = [...appliances].sort((a, b) => (b.appliance_id || 0) - (a.appliance_id || 0));
+      console.log('Sorted appliances:', sortedAppliances.map(a => a.appliance_id));
+
+      container.innerHTML = sortedAppliances.map(app => {
         const appName = app.name || app.appliance_name || 'Unknown';
         const monthlyKwh = parseFloat(app.monthly_kwh || 0);
         const cost = monthlyKwh * currentRate;
