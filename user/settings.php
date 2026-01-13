@@ -729,14 +729,14 @@
             fetch('api_batangas.php')
                 .then(res => res.json())
                 .then(data => {
-                    citySelect.innerHTML = '<option value="">Select city</option>' + 
-                        data.map(city => 
-                            `<option value="${city.code}" ${city.name === currentCity ? 'selected' : ''}>${city.name}</option>`
+                    citySelect.innerHTML = '<option value="">Select city</option>' +
+                        data.map(city =>
+                            `<option value="${city.name}" ${city.name === currentCity ? 'selected' : ''}>${city.name}</option>`
                         ).join('');
-                    
-                    if (cityCode && citySelect.querySelector(`option[value="${cityCode}"]`)) {
-                        citySelect.value = cityCode;
-                        loadBarangaysForModal(cityCode);
+
+                    if (currentCity && citySelect.querySelector(`option[value="${currentCity}"]`)) {
+                        citySelect.value = currentCity;
+                        loadBarangaysForModal(currentCity);
                     }
                 })
                 .catch(() => {
@@ -744,9 +744,9 @@
                 });
 
             citySelect.addEventListener('change', () => {
-                const code = citySelect.value;
-                if (code) {
-                    loadBarangaysForModal(code);
+                const cityName = citySelect.value;
+                if (cityName) {
+                    loadBarangaysForModal(cityName);
                 } else {
                     barangaySelect.innerHTML = '<option value="">Select barangay</option>';
                     barangaySelect.disabled = true;

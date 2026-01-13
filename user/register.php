@@ -356,8 +356,8 @@
             fetch('api_batangas.php')
                 .then(res => res.json())
                 .then(data => {
-                    citySelect.innerHTML += data.map(city => 
-                        `<option value="${city.code}">${city.name}</option>`
+                    citySelect.innerHTML += data.map(city =>
+                        `<option value="${city.name}">${city.name}</option>`
                     ).join('');
                 })
                 .catch(() => {
@@ -365,18 +365,18 @@
                 });
 
             citySelect.addEventListener('change', () => {
-                const cityCode = citySelect.value;
+                const cityName = citySelect.value;
                 barangaySelect.innerHTML = '<option>Loading...</option>';
                 barangaySelect.disabled = true;
 
-                if (!cityCode) return;
+                if (!cityName) return;
 
-                fetch(`api_batangas.php?city=${cityCode}`)
+                fetch(`api_batangas.php?city=${encodeURIComponent(cityName)}`)
                     .then(res => res.json())
                     .then(data => {
                         barangaySelect.innerHTML = '<option value="">Select barangay</option>' +
-                            (data.length ? data.map(brgy => 
-                                `<option value="${brgy.code}">${brgy.name}</option>`
+                            (data.length ? data.map(brgy =>
+                                `<option value="${brgy.name}">${brgy.name}</option>`
                             ).join('') : '<option>No barangays found</option>');
                         barangaySelect.disabled = false;
                     })
