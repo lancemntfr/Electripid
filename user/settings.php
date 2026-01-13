@@ -298,7 +298,7 @@
                         <span>Personal Details</span>
                     </div>
                     <i class="bi bi-chevron-down"></i>
-                </div>
+                    </div>
                 <div class="collapse section-content" id="personalDetailsCollapse">
                     <!-- Name -->
                     <div class="setting-item">
@@ -309,7 +309,7 @@
                         <button type="button" class="btn btn-outline-primary change-btn" onclick="openNameModal()" title="Edit Name">
                             <i class="bi bi-pencil"></i>
                         </button>
-                    </div>
+                </div>
 
                     <!-- Contact -->
                     <div class="setting-item">
@@ -319,7 +319,7 @@
                                 <div><i class="bi bi-envelope me-2"></i><?= htmlspecialchars($user['email']) ?></div>
                                 <div class="mt-1 <?= empty($user['cp_number']) ? 'empty' : '' ?>">
                                     <i class="bi bi-telephone me-2"></i><?= !empty($user['cp_number']) ? htmlspecialchars($user['cp_number']) : 'No phone number' ?>
-                                </div>
+                    </div>
                             </div>
                         </div>
                         <div class="d-flex flex-column gap-2">
@@ -344,7 +344,7 @@
                         <button type="button" class="btn btn-outline-primary change-btn" onclick="openLocationModal()" title="Edit Address">
                             <i class="bi bi-pencil"></i>
                         </button>
-                    </div>
+                </div>
 
                     <!-- Electricity Provider -->
                     <div class="setting-item">
@@ -512,8 +512,8 @@
                     </button>
                 </div>
             </div>
-        </div>
-    </div>
+                    </div>
+                </div>
 
     <!-- Provider Modal -->
     <div class="modal fade" id="providerModal" tabindex="-1" aria-labelledby="providerModalLabel" aria-hidden="true">
@@ -545,8 +545,8 @@
                     </button>
                 </div>
             </div>
-        </div>
-    </div>
+                    </div>
+                </div>
 
     <!-- Name Modal -->
     <div class="modal fade" id="nameModal" tabindex="-1" aria-labelledby="nameModalLabel" aria-hidden="true">
@@ -729,11 +729,11 @@
             fetch('api_batangas.php')
                 .then(res => res.json())
                 .then(data => {
-                    citySelect.innerHTML = '<option value="">Select city</option>' +
-                        data.map(city =>
+                    citySelect.innerHTML = '<option value="">Select city</option>' + 
+                        data.map(city => 
                             `<option value="${city.name}" ${city.name === currentCity ? 'selected' : ''}>${city.name}</option>`
                         ).join('');
-
+                    
                     if (currentCity && citySelect.querySelector(`option[value="${currentCity}"]`)) {
                         citySelect.value = currentCity;
                         loadBarangaysForModal(currentCity);
@@ -756,23 +756,23 @@
 
         function loadBarangaysForModal(code) {
             const barangaySelect = document.getElementById('modalBarangay');
-            barangaySelect.innerHTML = '<option>Loading...</option>';
-            barangaySelect.disabled = true;
+                barangaySelect.innerHTML = '<option>Loading...</option>';
+                barangaySelect.disabled = true;
 
-            fetch(`api_batangas.php?city=${code}`)
-                .then(res => res.json())
-                .then(data => {
-                    barangaySelect.innerHTML = '<option value="">Select barangay</option>' +
-                        (data.length ? data.map(brgy => 
-                            `<option value="${brgy.name}" ${brgy.name === currentBarangay ? 'selected' : ''}>${brgy.name}</option>`
-                        ).join('') : '<option>No barangays found</option>');
-                    barangaySelect.disabled = false;
-                })
-                .catch(() => {
-                    barangaySelect.innerHTML = '<option>Error loading barangays</option>';
-                    barangaySelect.disabled = false;
-                });
-        }
+                fetch(`api_batangas.php?city=${code}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        barangaySelect.innerHTML = '<option value="">Select barangay</option>' +
+                            (data.length ? data.map(brgy => 
+                                `<option value="${brgy.name}" ${brgy.name === currentBarangay ? 'selected' : ''}>${brgy.name}</option>`
+                            ).join('') : '<option>No barangays found</option>');
+                        barangaySelect.disabled = false;
+                    })
+                    .catch(() => {
+                        barangaySelect.innerHTML = '<option>Error loading barangays</option>';
+                        barangaySelect.disabled = false;
+                    });
+            }
 
         function openChangeModal(field, label, currentValue, type) {
             currentField = field;
@@ -887,13 +887,13 @@
                 alertDiv.innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Please enter a value.</div>';
                 return;
             }
-
+            
             // Validate email format if changing email
             if (currentField === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newValue)) {
                 alertDiv.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>Please enter a valid email address.</div>';
                 return;
             }
-
+            
             const originalText = saveBtn.innerHTML;
             saveBtn.disabled = true;
             saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
@@ -917,9 +917,9 @@
                         provider_id: <?= $current_provider_id ?: 0 ?>
                     })
                 });
-
+                
                 const result = await response.json();
-
+                
                 if (result.success) {
                     alertDiv.innerHTML = '<div class="alert alert-success"><i class="bi bi-check-circle me-2"></i>Updated successfully!</div>';
                     setTimeout(() => {
@@ -1058,7 +1058,7 @@
             const originalText = saveBtn.innerHTML;
             saveBtn.disabled = true;
             saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
-
+            
             try {
                 const response = await fetch('settings/update_profile.php', {
                     method: 'POST',
@@ -1103,9 +1103,9 @@
 
             if (!budgetInput.value || budget < 0) {
                 alertDiv.innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Please enter a valid budget amount.</div>';
-                return;
-            }
-
+                    return;
+                }
+                
             const originalText = saveBtn.innerHTML;
             saveBtn.disabled = true;
             saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
@@ -1149,8 +1149,8 @@
 
             if (!password) {
                 alertDiv.innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Please enter a new password.</div>';
-                return;
-            }
+                    return;
+                }
 
             if (password.length < 8) {
                 alertDiv.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>Password must be at least 8 characters long.</div>';
@@ -1183,9 +1183,9 @@
                         confirm_password: confirmPassword
                     })
                 });
-
+                
                 const result = await response.json();
-
+                
                 if (result.success) {
                     alertDiv.innerHTML = '<div class="alert alert-success"><i class="bi bi-check-circle me-2"></i>Password updated successfully!</div>';
                     setTimeout(() => {

@@ -27,7 +27,7 @@
         $provider_result = executeQuery($default_provider_query);
         $provider_row = mysqli_fetch_assoc($provider_result);
         $provider_id = mysqli_real_escape_string($conn, $provider_row['provider_id']);
-
+        
         $create_household = "INSERT INTO HOUSEHOLD (user_id, provider_id) VALUES ('$user_id', '$provider_id')";
         executeQuery($create_household);
         $household_id = mysqli_insert_id($conn);

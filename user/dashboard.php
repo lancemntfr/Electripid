@@ -1,78 +1,80 @@
 <?php
-session_start();
-require_once '../connect.php';
+  session_start();
+  require_once '../connect.php';
 
-if (!isset($_SESSION['user_id'])) {
-  header('Location: login.php');
-  exit;
-}
-
-// Fetch user data from database
-$userId = $_SESSION['user_id'];
-$userName = 'User';
-$userEmail = '';
-
-if (!empty($userId)) {
-    $user_id = mysqli_real_escape_string($conn, $userId);
-    $user_query = "SELECT fname, lname, email FROM USER WHERE user_id = '$user_id' LIMIT 1";
-    $user_result = mysqli_query($conn, $user_query);
-    
-    if ($user_result && mysqli_num_rows($user_result) === 1) {
-        $user_row = mysqli_fetch_assoc($user_result);
-        $userName = trim($user_row['fname'] . ' ' . $user_row['lname']);
-        $userEmail = $user_row['email'];
-    } else {
-        // Fallback to session data if query fails
-        $userName = htmlspecialchars($_SESSION['username'] ?? 'User');
-        $userEmail = htmlspecialchars($_SESSION['email'] ?? '');
-    }
-} else {
-    $userName = htmlspecialchars($_SESSION['username'] ?? 'User');
-    $userEmail = htmlspecialchars($_SESSION['email'] ?? '');
-}
-
-$provider_query = "SELECT provider_name FROM ELECTRICITY_PROVIDER";
-$provider_result = executeQuery($provider_query);
-$providerRates = [];
-// Default rate per kWh (can be customized per provider if needed)
-$defaultRate = 10.0; // PHP per kWh
-while ($row = $provider_result->fetch_assoc()) {
-  $providerRates[$row['provider_name']] = $defaultRate;
-}
-
-$appliances = [];
-$currentProvider = '';
-$currentRate = 0.00;
-$monthlyBudget = 0; // Default budget
-$user_id_escaped = mysqli_real_escape_string($conn, $userId);
-$household_query = "SELECT h.household_id, h.monthly_budget, p.provider_name FROM HOUSEHOLD h LEFT JOIN ELECTRICITY_PROVIDER p ON h.provider_id = p.provider_id WHERE h.user_id = '$user_id_escaped'";
-$household_result = executeQuery($household_query);
-
-if ($household_result && $household_result->num_rows > 0) {
-  $household_row = $household_result->fetch_assoc();
-  $household_id = mysqli_real_escape_string($conn, $household_row['household_id']);
-
-  if (!empty($household_row['provider_name'])) {
-    $currentProvider = $household_row['provider_name'];
-    // Use default rate or get from providerRates array
-    if (isset($providerRates[$currentProvider])) {
-      $currentRate = $providerRates[$currentProvider];
-    }
+  if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit;
   }
 
-  if (!empty($household_row['monthly_budget'])) {
-    $monthlyBudget = floatval($household_row['monthly_budget']);
+  $userId = $_SESSION['user_id'];
+  $userName = 'User';
+  $userEmail = '';
+  $userCity = 'Batangas'; // Default fallback
+  $userBarangay = '';
+
+  if (!empty($userId)) {
+      $user_id = mysqli_real_escape_string($conn, $userId);
+      $user_query = "SELECT fname, lname, email, city, barangay FROM USER WHERE user_id = '$user_id' LIMIT 1";
+      $user_result = executeQuery($user_query);
+
+      if ($user_result && mysqli_num_rows($user_result) === 1) {
+          $user_row = mysqli_fetch_assoc($user_result);
+          $userName = trim($user_row['fname'] . ' ' . $user_row['lname']);
+          $userEmail = $user_row['email'];
+          $userCity = $user_row['city'] ?: 'Batangas'; // Default to Batangas if empty
+          $userBarangay = $user_row['barangay'] ?: '';
+      } else {
+          // Fallback to session data if query fails
+          $userName = htmlspecialchars($_SESSION['username'] ?? 'User');
+          $userEmail = htmlspecialchars($_SESSION['email'] ?? '');
+      }
+  } else {
+      $userName = htmlspecialchars($_SESSION['username'] ?? 'User');
+      $userEmail = htmlspecialchars($_SESSION['email'] ?? '');
   }
 
-  $appliance_query = "SELECT * FROM APPLIANCE WHERE household_id = '$household_id' ORDER BY appliance_id DESC";
-  $appliance_result = executeQuery($appliance_query);
+  $provider_query = "SELECT provider_name, rates FROM ELECTRICITY_PROVIDER";
+  $provider_result = executeQuery($provider_query);
+  $providerRates = [];
+  while ($row = $provider_result->fetch_assoc()) {
+    $providerRates[$row['provider_name']] = floatval($row['rates']);
+  }
 
-  if ($appliance_result) {
-    while ($row = mysqli_fetch_assoc($appliance_result)) {
-      $appliances[] = $row;
+  $appliances = [];
+  $currentProvider = '';
+  $currentRate = 0.00;
+  $monthlyBudget = 0; // Default budget
+  $user_id_escaped = mysqli_real_escape_string($conn, $userId);
+  $household_query = "SELECT h.household_id, h.monthly_budget, p.provider_name, p.rates FROM HOUSEHOLD h LEFT JOIN ELECTRICITY_PROVIDER p ON h.provider_id = p.provider_id WHERE h.user_id = '$user_id_escaped'";
+  $household_result = executeQuery($household_query);
+
+  if ($household_result && $household_result->num_rows > 0) {
+    $household_row = $household_result->fetch_assoc();
+    $household_id = mysqli_real_escape_string($conn, $household_row['household_id']);
+
+    if (!empty($household_row['provider_name'])) {
+      $currentProvider = $household_row['provider_name'];
+      if (!empty($household_row['rates'])) {
+        $currentRate = floatval($household_row['rates']);
+      } elseif (isset($providerRates[$currentProvider])) {
+        $currentRate = $providerRates[$currentProvider];
+      }
+    }
+
+    if (!empty($household_row['monthly_budget'])) {
+      $monthlyBudget = floatval($household_row['monthly_budget']);
+    }
+
+    $appliance_query = "SELECT * FROM APPLIANCE WHERE household_id = '$household_id' ORDER BY appliance_id DESC";
+    $appliance_result = executeQuery($appliance_query);
+
+    if ($appliance_result) {
+      while ($row = mysqli_fetch_assoc($appliance_result)) {
+        $appliances[] = $row;
+      }
     }
   }
-}
 ?>
 
 <!DOCTYPE html>
@@ -187,7 +189,8 @@ if ($household_result && $household_result->num_rows > 0) {
           <img src="" alt="Weather Icon">
         </div>
         <div>
-          <div class="weather-location small text-secondary text-uppercase" id="weatherLocation">BATANGAS CITY</div>
+          <div class="weather-location small text-secondary text-uppercase" id="weatherLocation"><?php echo htmlspecialchars($userCity . ($userBarangay ? ', ' . $userBarangay : '')); ?></div>
+          <div class="weather-date small text-muted" id="weatherDate"><?php echo date('l, F j, Y'); ?></div>
           <div class="weather-temp fw-bold" id="weatherTemp">--°C</div>
           <div class="weather-info d-flex gap-4 small text-secondary">
             <span id="weatherCondition">--</span>
@@ -497,21 +500,19 @@ if ($household_result && $household_result->num_rows > 0) {
   <!-- PayPal SDK -->
   <script src="https://www.paypal.com/sdk/js?client-id=AWYEp1TqBsmBV8WfID4-nr3Soew-fL2FUx2ubkfXS_Qw41bKVP_YligWWRKjdYJSaQeZvDbSoKzrg5Ro&currency=USD"></script>
 
+  <!-- Global Variables -->
   <script>
+    // Global variables needed across modules
     let appliances = <?php echo json_encode($appliances); ?>;
     let currentRate = <?php echo $currentRate; ?>;
     let currentProvider = <?php echo json_encode($currentProvider); ?>;
     let monthlyBudget = <?php echo $monthlyBudget; ?>;
-    let householdId = <?php echo isset($household_id) ? json_encode($household_id) : 'null'; ?>;
     let forecastChart = null;
-    const WEATHER_API_KEY = 'a4ad5de980d109abed0fec591eefd391';
-    let currentLocation = 'Batangas';
+    let currentLocation = '<?php echo addslashes($userCity); ?>';
+    let userBarangay = '<?php echo addslashes($userBarangay); ?>';
     let userId = <?php echo $userId; ?>;
     let selectedDonationAmount = null;
-
     const USD_RATE = 59; // 1 USD ≈ 59 PHP
-
-    // Provider rates from database
     const providerRates = <?php echo json_encode($providerRates); ?>;
 
     // Update rate when provider changes
@@ -519,799 +520,22 @@ if ($household_result && $household_result->num_rows > 0) {
       currentRate = providerRates[currentProvider];
     }
 
+    // Initialize when DOM is ready
     document.addEventListener('DOMContentLoaded', function() {
       updateAllMetrics();
       initForecastChart();
       fetchWeather();
       loadAppliances();
     });
-
-    // Helper function for weather icon color filtering
-    function getWeatherIconFilter(condition, description) {
-      const cond = condition.toLowerCase();
-      const desc = description.toLowerCase();
-
-      if (cond.includes('cloud') || desc.includes('cloud')) {
-        return 'brightness(0) saturate(100%) invert(40%) sepia(100%) saturate(2000%) hue-rotate(200deg) brightness(0.9)'; // Blue
-      } else if (cond.includes('rain') || desc.includes('rain') || desc.includes('drizzle')) {
-        return 'brightness(0) saturate(100%) invert(40%) sepia(100%) saturate(2000%) hue-rotate(200deg) brightness(0.8)'; // Darker blue
-      } else if (cond.includes('clear') || desc.includes('clear') || desc.includes('sun')) {
-        return 'brightness(0) saturate(100%) invert(80%) sepia(100%) saturate(2000%) hue-rotate(0deg) brightness(1.1)'; // Yellow/Orange
-      } else if (cond.includes('snow')) {
-        return 'brightness(0) saturate(100%) invert(100%)'; // White
-      } else if (cond.includes('thunder') || desc.includes('thunder')) {
-        return 'brightness(0) saturate(100%) invert(20%) sepia(100%) saturate(2000%) hue-rotate(250deg)'; // Purple
-      } else if (cond.includes('mist') || cond.includes('fog') || desc.includes('mist') || desc.includes('fog')) {
-        return 'brightness(0) saturate(100%) invert(90%)'; // Light gray
-      }
-      return '';
-    }
-
-    // Weather functions
-    async function fetchWeather() {
-      try {
-        const res = await fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${currentLocation}&appid=${WEATHER_API_KEY}&units=metric`);
-        const data = await res.json();
-
-        if (data.cod === '200') {
-          updateCurrentWeather(data);
-          updateWeatherForecast(data);
-        } else {
-          throw new Error('Weather data unavailable');
-        }
-      } catch (error) {
-        console.error('Error fetching weather:', error);
-      }
-    }
-
-    function updateCurrentWeather(data) {
-      const current = data.list[0];
-      document.getElementById('weatherTemp').textContent = Math.round(current.main.temp) + '°C';
-      document.getElementById('weatherCondition').textContent = current.weather[0].description;
-      document.getElementById('weatherHumidity').textContent = current.main.humidity;
-      document.getElementById('weatherWind').textContent = current.wind.speed;
-
-      const iconCode = current.weather[0].icon;
-      const weatherIcon = document.querySelector('#weatherIcon img');
-      weatherIcon.src = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
-
-      const filterColor = getWeatherIconFilter(current.weather[0].main, current.weather[0].description);
-      if (filterColor) {
-        weatherIcon.style.filter = filterColor;
-      }
-    }
-
-    function updateWeatherForecast(data) {
-      const forecastContainer = document.getElementById('weatherForecast');
-      forecastContainer.innerHTML = '';
-
-      const forecastByDay = {};
-      data.list.forEach(item => {
-        const date = new Date(item.dt_txt);
-        const day = date.toLocaleDateString('en-US', {
-          weekday: 'short'
-        });
-        const hour = date.getHours();
-
-        if (hour === 12 && !forecastByDay[day]) {
-          forecastByDay[day] = item;
-        }
-      });
-
-      Object.keys(forecastByDay).forEach(day => {
-        const item = forecastByDay[day];
-        const iconCode = item.weather[0].icon;
-        const temp = Math.round(item.main.temp);
-        const filterColor = getWeatherIconFilter(item.weather[0].main, item.weather[0].description);
-
-        const dayDiv = document.createElement('div');
-        dayDiv.classList.add('forecast-day');
-        const imgStyle = filterColor ? `style="filter: ${filterColor};"` : '';
-        dayDiv.innerHTML = `
-          <div class="fw-bold">${day}</div>
-          <img src="https://openweathermap.org/img/wn/${iconCode}@2x.png" alt="icon" ${imgStyle}>
-          <div>${temp}°C</div>
-        `;
-        forecastContainer.appendChild(dayDiv);
-      });
-    }
-
-    async function saveSettings() {
-      const budget = parseFloat(document.getElementById('monthlyBudget').innerText.replace('₱', '').replace(',', ''));
-      try {
-        const response = await fetch('settings/save_settings.php', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            monthly_budget: budget
-          })
-        });
-        const result = await response.json();
-        if (!result.success) {
-          console.error('Error saving settings:', result.error);
-        }
-      } catch (error) {
-        console.error('Error saving settings:', error);
-      }
-    }
-
-    function openDonationModal() {
-      const modal = document.getElementById('donationModal');
-      modal.style.display = 'flex';
-      modal.classList.add('d-flex');
-      renderPayPalButtons();
-    }
-
-    function closeDonationModal() {
-      const modal = document.getElementById('donationModal');
-      modal.style.display = 'none';
-      modal.classList.remove('d-flex');
-    }
-
-    function selectAmount(amount, el) {
-      document.getElementById('customAmount').value = '';
-      selectedDonationAmount = Number(amount);
-
-      document.querySelectorAll('.donation-btn').forEach(btn => {
-        btn.classList.remove('active');
-      });
-
-      if (el) el.classList.add('active');
-
-      renderPayPalButtons();
-    }
-
-    // ===============================
-    // CUSTOM AMOUNT INPUT
-    // ===============================
-    document.getElementById('customAmount').addEventListener('input', function() {
-      const value = Number(this.value);
-
-      if (value >= 10) {
-        selectedDonationAmount = value;
-
-        document.querySelectorAll('.donation-btn')
-          .forEach(btn => btn.classList.remove('active'));
-
-        renderPayPalButtons();
-      }
-    });
-
-
-    // ===============================
-    // PAYPAL INTEGRATION (FIXED)
-    // ===============================
-    function getDonationAmount() {
-      const customAmountInput = document.getElementById('customAmount');
-      const typedAmount = Number(customAmountInput.value);
-
-      if (!isNaN(typedAmount) && typedAmount >= 10) {
-        selectedDonationAmount = typedAmount;
-        return typedAmount;
-      }
-
-      if (selectedDonationAmount && selectedDonationAmount >= 10) {
-        return Number(selectedDonationAmount);
-      }
-
-      return null;
-    }
-
-    function renderPayPalButtons() {
-      const container = document.getElementById('paypal-button-container');
-      container.innerHTML = '';
-
-      const phpAmount = getDonationAmount();
-
-      // HARD VALIDATION
-      if (!phpAmount || isNaN(phpAmount) || phpAmount < 10) {
-        container.innerHTML =
-          '<div class="alert alert-warning">Minimum donation is ₱10.</div>';
-        return;
-      }
-
-      // Check if PayPal SDK is loaded
-      if (typeof paypal === 'undefined') {
-        container.innerHTML = '<div class="alert alert-info">Loading PayPal...</div>';
-        setTimeout(function() {
-          renderPayPalButtons();
-        }, 500);
-        return;
-      }
-
-      // Convert PHP → USD
-      const usdAmount = (phpAmount / USD_RATE).toFixed(2);
-
-      console.log('PayPal Amounts:', {
-        php: phpAmount,
-        usd: usdAmount
-      });
-
-      try {
-        paypal.Buttons({
-
-            // CREATE ORDER
-            createOrder: async function() {
-              try {
-                const response = await fetch('../paypal/paypal.php?action=create', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({
-                    amount: usdAmount
-                  })
-                });
-
-                const text = await response.text();
-                if (!response.ok) throw new Error(text);
-
-                const result = JSON.parse(text);
-                if (!result.id) throw new Error('No order ID returned');
-
-                return result.id;
-
-              } catch (error) {
-                console.error('Create Order Error:', error);
-                alert('Unable to create payment.\n\n' + error.message);
-                throw error;
-              }
-            },
-
-            // CAPTURE PAYMENT
-            onApprove: async function(data) {
-              try {
-                const response = await fetch('../paypal/paypal.php?action=capture', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({
-                    orderID: data.orderID,
-                    phpAmount: phpAmount
-                  })
-                });
-
-                const text = await response.text();
-                if (!response.ok) throw new Error(text);
-
-                const result = JSON.parse(text);
-
-                if (result.success) {
-                  alert(
-                    'Thank you for your donation of ₱' +
-                    phpAmount.toFixed(2) +
-                    ' 💚'
-                  );
-                  closeDonationModal();
-                  setTimeout(() => location.reload(), 1500);
-                } else {
-                  throw new Error(result.error || 'Payment failed');
-                }
-
-              } catch (error) {
-                console.error('Capture Error:', error);
-                alert(
-                  'Payment processing failed.\n\n' +
-                  error.message +
-                  '\n\nIf charged, please contact support.'
-                );
-              }
-            },
-
-            // CANCEL
-            onCancel: function() {
-              alert('Payment was cancelled.');
-            },
-
-            // ERROR
-            onError: function(err) {
-              console.error('PayPal Error:', err);
-              alert('An error occurred. Please try again.');
-            },
-
-            // STYLE
-            style: {
-              layout: 'vertical',
-              color: 'blue',
-              shape: 'rect',
-              label: 'paypal'
-            }
-
-          }).render('#paypal-button-container')
-          .catch(error => {
-            console.error('Render Error:', error);
-            container.innerHTML =
-              '<div class="alert alert-danger">Failed to load PayPal buttons. Please refresh the page and try again.</div>';
-          });
-      } catch (error) {
-        console.error('PayPal Initialization Error:', error);
-        container.innerHTML = '<div class="alert alert-info">Loading PayPal...</div>';
-        setTimeout(function() {
-          renderPayPalButtons();
-        }, 1000);
-      }
-    }
-    // Chatbot Functions with Ollama Integration
-    let isChatbotLoading = false;
-
-    function openChatbot() {
-      const widget = document.getElementById('chatbotWidget');
-      widget.style.display = 'block';
-      loadChatHistory();
-    }
-
-    function closeChatbot() {
-      const widget = document.getElementById('chatbotWidget');
-      widget.style.display = 'none';
-    }
-
-    function handleChatKeypress(event) {
-      if (event.key === 'Enter' && !event.shiftKey) {
-        event.preventDefault();
-        sendMessage();
-      }
-    }
-
-    async function loadChatHistory() {
-      try {
-        const response = await fetch('../chatbot/get_history.php');
-        const result = await response.json();
-
-        if (!result.success) return;
-
-        const messagesContainer = document.getElementById('chatbotMessages');
-
-        // Preserve only the welcome message
-        const welcome = messagesContainer.firstElementChild;
-        messagesContainer.innerHTML = '';
-        if (welcome) messagesContainer.appendChild(welcome);
-
-        result.messages.forEach(msg => {
-          addMessageToChat(msg.message, msg.sender, false);
-        });
-
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-      } catch (error) {
-        console.error('Error loading chat history:', error);
-      }
-    }
-
-
-    async function sendMessage() {
-      removeTypingIndicator();
-
-      const input = document.getElementById('chatInput');
-      const message = input.value.trim();
-
-      if (!message || isChatbotLoading) return;
-
-      addMessageToChat(message, 'user');
-      input.value = '';
-      showTypingIndicator();
-      isChatbotLoading = true;
-
-
-      try {
-        const response = await fetch('../chatbot/chat_handler.php', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            message: message
-          })
-        });
-
-        const text = await response.text();
-
-        // Try to parse JSON
-        let result;
-        try {
-          result = JSON.parse(text);
-        } catch (e) {
-          console.error('Response is not JSON:', text);
-          removeTypingIndicator();
-          isChatbotLoading = false;
-          addMessageToChat('Error: Server returned invalid response. Please check browser console for details.', 'bot');
-          return;
-        }
-
-        removeTypingIndicator();
-        isChatbotLoading = false;
-
-        if (result.success) {
-          addMessageToChat(result.reply, 'bot');
-        } else {
-          addMessageToChat('Error: ' + (result.error || 'Unknown error occurred'), 'bot');
-        }
-      } catch (error) {
-        console.error('Chatbot error:', error);
-        removeTypingIndicator();
-        isChatbotLoading = false;
-        addMessageToChat('Network error. Please try again.', 'bot');
-      }
-
-    }
-
-    function addMessageToChat(message, sender, scrollToBottom = true) {
-      const messagesContainer = document.getElementById('chatbotMessages');
-      const messageDiv = document.createElement('div');
-      messageDiv.className = sender === 'user' ? 'user-message d-flex gap-3 mb-4 flex-row-reverse' : 'bot-message d-flex gap-3 mb-4';
-      const avatar = sender === 'user' ? '👤' : '🤖';
-
-      messageDiv.innerHTML = `
-    <div class="message-avatar rounded-circle d-flex align-items-center justify-content-center" style="flex-shrink: 0; width: 30px; height: 30px; background: #1E88E5 !important; color: white; font-size: 0.9rem;">${avatar}</div>
-    <div class="message-content ${sender === 'user' ? 'text-white' : 'bg-white'} p-2 ${sender === 'user' ? '' : 'rounded-3'} small" style="${sender === 'user' ? 'background: #1E88E5 !important; border-radius: 25px;' : ''} max-width: 75%; word-wrap: break-word;">${escapeHtml(message)}</div>
-  `;
-
-      messagesContainer.appendChild(messageDiv);
-
-      if (scrollToBottom) {
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-      }
-    }
-
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    }
-
-    function showTypingIndicator() {
-      const messagesContainer = document.getElementById('chatbotMessages');
-      const typingDiv = document.createElement('div');
-      typingDiv.className = 'bot-message typing-indicator-container d-flex gap-3 mb-4';
-      typingDiv.id = 'typingIndicator';
-      typingDiv.innerHTML = `
-    <div class="message-avatar rounded-circle d-flex align-items-center justify-content-center" style="flex-shrink: 0; width: 30px; height: 30px; background: #1E88E5 !important; color: white; font-size: 0.9rem;">🤖</div>
-    <div class="typing-indicator d-flex gap-1 p-2 bg-light rounded-3">
-      <div class="typing-dot rounded-circle bg-secondary" style="width: 6px; height: 6px; animation: typing 1.4s infinite;"></div>
-      <div class="typing-dot rounded-circle bg-secondary" style="width: 6px; height: 6px; animation: typing 1.4s infinite 0.2s;"></div>
-      <div class="typing-dot rounded-circle bg-secondary" style="width: 6px; height: 6px; animation: typing 1.4s infinite 0.4s;"></div>
-    </div>
-  `;
-      messagesContainer.appendChild(typingDiv);
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
-
-    function removeTypingIndicator() {
-      const indicator = document.getElementById('typingIndicator');
-      if (indicator) {
-        indicator.remove();
-      }
-    }
-
-    async function clearChatHistory() {
-      if (!confirm('Are you sure you want to clear your chat history?')) return;
-
-      try {
-        const response = await fetch('../chatbot/clear_chat.php', {
-          method: 'POST'
-        });
-        const text = await response.text();
-
-        // Try to parse JSON
-        let result;
-        try {
-          result = JSON.parse(text);
-        } catch (e) {
-          console.error('Response is not JSON:', text);
-          alert('Error clearing chat. Check browser console.');
-          return;
-        }
-
-        if (result.success) {
-          const messagesContainer = document.getElementById('chatbotMessages');
-          messagesContainer.innerHTML = `
-        <div class="bot-message d-flex gap-2 mb-3">
-          <div class="message-avatar rounded-circle d-flex align-items-center justify-content-center" style="flex-shrink: 0; width: 30px; height: 30px; background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%); color: white; font-size: 0.9rem;">🤖</div>
-          <div class="message-content bg-white p-2 rounded-3 small shadow-sm">
-            Hello! I'm your Electripid assistant powered by AI. I can help you with:
-            <br>• Energy consumption analysis
-            <br>• Money-saving tips
-            <br>• Appliance recommendations
-            <br>• Bill estimates
-            <br><br>How can I help you today?
-          </div>
-        </div>
-      `;
-        } else {
-          alert('Error: ' + (result.error || 'Failed to clear chat'));
-        }
-      } catch (error) {
-        console.error('Error clearing chat:', error);
-        alert('Network error while clearing chat');
-      }
-    }
-
-    // Appliance Functions
-    function loadAppliances() {
-      console.log('loadAppliances called with', appliances.length, 'appliances');
-      // Process appliance data (calculate monthly usage, normalize names)
-      appliances = appliances.map(app => {
-        if (!app.monthly_kwh && app.power_kwh && app.hours_per_day && app.usage_per_week) {
-          app.monthly_kwh = parseFloat(app.power_kwh) * parseFloat(app.hours_per_day) * parseFloat(app.usage_per_week) * 4.33;
-        }
-        if (!app.name && app.appliance_name) {
-          app.name = app.appliance_name;
-        }
-        return app;
-      });
-      console.log('Processed appliances:', appliances.length);
-      updateAllMetrics();
-    }
-
-    async function refreshAppliances() {
-      try {
-        const response = await fetch('appliances/get_appliances.php');
-        const result = await response.json();
-
-        if (result.success) {
-          appliances = result.appliances;
-          loadAppliances();
-          console.log('Appliances refreshed:', appliances.length, 'appliances');
-        } else {
-          console.error('Failed to refresh appliances:', result.error);
-        }
-      } catch (error) {
-        console.error('Error refreshing appliances:', error);
-      }
-    }
-
-    async function addAppliance() {
-      const name = document.getElementById('deviceName').value.trim();
-      const power = parseFloat(document.getElementById('devicePower').value);
-      const hours = parseFloat(document.getElementById('deviceHours').value);
-      const usagePerWeek = parseFloat(document.getElementById('deviceUsagePerWeek').value);
-
-      if (!name || !power || !hours || !usagePerWeek) {
-        alert('Please fill in all fields');
-        return;
-      }
-
-      const response = await fetch('appliances/save_appliance.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: userId,
-          name: name,
-          power: power,
-          hours: hours,
-          usage_per_week: usagePerWeek,
-          rate: currentRate
-        })
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        console.log('Appliance added successfully, refreshing...');
-        // Clear form and refresh appliances
-        document.getElementById('deviceName').value = '';
-        document.getElementById('devicePower').value = '';
-        document.getElementById('deviceHours').value = '';
-        document.getElementById('deviceUsagePerWeek').value = '';
-
-        await refreshAppliances();
-      } else {
-        console.error('Error adding appliance:', result.error);
-        alert('Error: ' + (result.error || 'Failed to add appliance'));
-      }
-    }
-
-    async function removeApplianceDB(applianceId) {
-      if (confirm('Are you sure you want to remove this appliance?')) {
-        const response = await fetch('appliances/remove_appliance.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            appliance_id: applianceId,
-            user_id: userId
-          })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-          await refreshAppliances();
-        } else {
-          alert('Error: ' + (result.error || 'Failed to remove appliance'));
-        }
-      }
-    }
-
-    // Metrics and Chart Functions
-    function updateAllMetrics() {
-      const totalKwh = appliances.reduce((sum, app) => sum + parseFloat(app.monthly_kwh || 0), 0);
-      const totalCost = totalKwh * currentRate;
-      const dailyKwh = totalKwh / 30;
-
-      const activeAppliancesEl = document.getElementById('activeAppliances');
-      const thisMonthKwhEl = document.getElementById('thisMonthKwh');
-      const dailyConsumptionEl = document.getElementById('dailyConsumption');
-      const monthlyCostEl = document.getElementById('monthlyCost');
-
-      if (activeAppliancesEl) activeAppliancesEl.textContent = appliances.length;
-      if (thisMonthKwhEl) thisMonthKwhEl.textContent = totalKwh.toFixed(1);
-      if (dailyConsumptionEl) dailyConsumptionEl.textContent = dailyKwh.toFixed(2);
-      if (monthlyCostEl) monthlyCostEl.textContent = Math.round(totalCost);
-
-      // Save electricity reading
-      if (totalKwh > 0) {
-        saveReading(dailyKwh, totalKwh);
-      }
-
-      updateForecastChart(totalKwh);
-      updateApplianceDisplay();
-
-      const tips = document.getElementById('energyTipsContent');
-      if (tips) {
-        tips.style.display = appliances.length > 0 ? 'block' : 'none';
-      }
-    }
-
-    // Save electricity reading to database
-    async function saveReading(dailyKwh, monthlyKwh) {
-      try {
-        const power = dailyKwh * 1000; // Convert to watts
-        const voltage = 220;
-        const current = power / voltage;
-        
-        await fetch('api/save_readings.php', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            energy_kwh: dailyKwh,
-            voltage: voltage,
-            current: current,
-            power: power
-          })
-        });
-      } catch (error) {
-        console.error('Error saving reading:', error);
-      }
-    }
-
-    function initForecastChart() {
-      const ctx = document.getElementById('forecastChart').getContext('2d');
-      forecastChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: [],
-          datasets: [{
-            label: 'kWh',
-            data: [],
-            borderColor: '#1976d2',
-            backgroundColor: 'rgba(25, 118, 210, 0.1)',
-            tension: 0.4,
-            fill: true,
-            borderWidth: 3
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          plugins: {
-            legend: {
-              display: false
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              grid: {
-                color: '#e3f2fd'
-              }
-            },
-            x: {
-              grid: {
-                display: false
-              }
-            }
-          }
-        }
-      });
-    }
-
-    function updateForecastChart(totalKwh) {
-      if (!forecastChart) return;
-
-      const today = new Date();
-      const weekCount = Math.min(4, Math.max(1, Math.ceil(today.getDate() / 7)));
-
-      const labels = [];
-      const data = [];
-
-      const weeklyKwh = totalKwh / 4;
-      const variation = weeklyKwh * 0.15;
-
-      for (let i = 1; i <= weekCount; i++) {
-        labels.push(`Week ${i}`);
-        const predictedKwh = weeklyKwh + (Math.random() * variation - variation / 2);
-        data.push(predictedKwh);
-      }
-
-      forecastChart.data.labels = labels;
-      forecastChart.data.datasets[0].data = data;
-      forecastChart.update();
-
-      // Save monthly forecast to database
-      if (totalKwh > 0) {
-        saveForecast(totalKwh, totalKwh * currentRate);
-      }
-    }
-
-    // Save forecast to database
-    async function saveForecast(predictedKwh, predictedCost) {
-      try {
-        const today = new Date();
-        const forecastDate = today.toISOString().split('T')[0];
-        
-        await fetch('api/save_forecast.php', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            forecast_type: 'monthly',
-            predicted_kwh: predictedKwh,
-            predicted_cost: predictedCost,
-            source_type: 'appliances',
-            forecast_date: forecastDate
-          })
-        });
-      } catch (error) {
-        console.error('Error saving forecast:', error);
-      }
-    }
-
-    function updateApplianceDisplay() {
-      console.log('updateApplianceDisplay called');
-      const container = document.getElementById('applianceDisplayList');
-      if (!container) {
-        console.error('Container not found!');
-        return;
-      }
-
-      console.log('Displaying', appliances.length, 'appliances');
-      if (appliances.length === 0) {
-        container.innerHTML = '<div class="text-center text-muted small py-3">No appliances tracked yet. Add one to get started!</div>';
-        return;
-      }
-
-      // Sort appliances by ID descending (newest first)
-      const sortedAppliances = [...appliances].sort((a, b) => (b.appliance_id || 0) - (a.appliance_id || 0));
-      console.log('Sorted appliances:', sortedAppliances.map(a => a.appliance_id));
-
-      container.innerHTML = sortedAppliances.map(app => {
-        const appName = app.name || app.appliance_name || 'Unknown';
-        const monthlyKwh = parseFloat(app.monthly_kwh || 0);
-        const cost = monthlyKwh * currentRate;
-        const appId = app.appliance_id || app.id || 0;
-
-        return `
-          <div class="card mb-2">
-            <div class="card-body p-3">
-              <div class="d-flex justify-content-between align-items-center">
-                <div>
-                  <h6 class="mb-1">${appName}</h6>
-                  <small class="text-muted">${monthlyKwh.toFixed(2)} kWh/month</small>
-                </div>
-                <button class="btn btn-sm btn-outline-danger" onclick="removeApplianceDB(${appId})">
-                  <i class="bi bi-trash"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
   </script>
+
+  <!-- Modular JavaScript Files -->
+  <script src="../assets/js/user/weather.js"></script>
+  <script src="../assets/js/user/appliances.js"></script>
+  <script src="../assets/js/user/donations.js"></script>
+  <script src="../assets/js/user/chatbot.js"></script>
+  <script src="../assets/js/user/charts.js"></script>
+  <script src="../assets/js/user/metrics.js"></script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
