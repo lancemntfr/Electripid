@@ -294,7 +294,7 @@ if ($household_result && $household_result->num_rows > 0) {
   </div>
 
   <!-- Donation Modal -->
-  <div id="donationModal" class="modal-overlay position-fixed top-0 start-0 end-0 bottom-0 align-items-center justify-content-center" style="display: none; z-index: 1001;">
+  <div id="donationModal" class="modal-overlay position-fixed top-0 start-0 end-0 bottom-0 align-items-center justify-content-center" style="display: none; z-index: 2000;">
     <div class="modal-content bg-white rounded-4" style="width: 90%; max-width: 500px;">
       <div class="modal-header d-flex justify-content-between align-items-center p-4 border-bottom">
         <h3 class="mb-0">💚 Support Electripid</h3>
