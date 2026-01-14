@@ -197,7 +197,11 @@
             text-transform: uppercase;
             border-radius: 5px;
             width: 100%;
+            max-width: 400px;
             margin-top: 20px;
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
         }
         .btn-signup:hover {
             background: #1565c0;

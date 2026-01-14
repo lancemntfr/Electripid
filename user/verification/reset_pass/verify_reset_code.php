@@ -85,6 +85,18 @@
             align-items: center;
             justify-content: center;
         }
+        .form-error-container {
+            border: 2px solid #f8d7da;
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 15px;
+            background: #fff5f5;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #842029;
+            font-size: 0.9rem;
+        }
         @media (max-width: 576px) {
             .code-input-box {
                 width: 40px;
@@ -101,6 +113,7 @@
     <div class="reset-container">
         <h2 class="mb-2 text-center">Reset Password</h2>
         <p class="text-muted text-center mb-4">Enter the 6-digit code sent to you.</p>
+        <div id="formError"></div>
 
         <?php if ($error): ?>
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -134,6 +147,11 @@
         <?php endif; ?>
         
         <p class="text-center text-muted small mt-3 mb-0" style="font-size: 0.75rem;">Electripid admin will never ask your own 6 digit code</p>
+        <p class="text-center mt-3 mb-0">
+            <a href="choose_reset_method.php" class="text-decoration-none">
+                <i class="bi bi-arrow-left me-1"></i> Back
+            </a>
+        </p>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -141,6 +159,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const inputs = ['code1', 'code2', 'code3', 'code4', 'code5', 'code6'];
             const inputElements = inputs.map(id => document.getElementById(id));
+            const formError = document.getElementById('formError');
             
             // Focus first input on load
             inputElements[0].focus();
@@ -159,6 +178,9 @@
                         inputElements[index + 1].focus();
                     }
                     
+                    if (formError) {
+                        formError.innerHTML = '';
+                    }
                     updateFullCode();
                 });
                 
@@ -173,6 +195,9 @@
                             }
                         });
                         inputElements[inputElements.length - 1].focus();
+                        if (formError) {
+                            formError.innerHTML = '';
+                        }
                         updateFullCode();
                     }
                 });
@@ -182,6 +207,9 @@
                     if (e.key === 'Backspace' && !e.target.value && index > 0) {
                         inputElements[index - 1].focus();
                         inputElements[index - 1].value = '';
+                        if (formError) {
+                            formError.innerHTML = '';
+                        }
                         updateFullCode();
                     }
                 });
@@ -206,7 +234,10 @@
                 
                 if (fullCode.length !== 6) {
                     e.preventDefault();
-                    alert('Please enter the complete 6-digit code.');
+                    if (formError) {
+                        formError.innerHTML = '<div class="form-error-container"><i class="bi bi-exclamation-triangle-fill"></i><span>Please enter the complete 6-digit code.</span></div>';
+                        formError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
                     inputElements[0].focus();
                     return false;
                 }

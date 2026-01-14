@@ -156,6 +156,11 @@
                 </div>
             <?php endif; ?>
         </form>
+        <p class="text-center mt-3 mb-0">
+            <a href="forgot_password.php" class="text-decoration-none">
+                <i class="bi bi-arrow-left me-1"></i> Back
+            </a>
+        </p>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

@@ -382,6 +382,13 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
                     });
 
                     successModal.show();
+                    
+                    // Auto-hide modal after 2 seconds
+                    setTimeout(function() {
+                        successModal.hide();
+                        // Return to clean login URL without query parameters after hiding
+                        window.location.href = 'login.php';
+                    }, 2000);
                 }
             }
         });
