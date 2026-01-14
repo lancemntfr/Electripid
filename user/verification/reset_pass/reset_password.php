@@ -101,7 +101,7 @@
             <div class="mb-3">
                 <label class="form-label">New Password <span class="text-danger">*</span></label>
                 <div class="position-relative">
-                    <input type="password" class="form-control" name="password" id="password" required minlength="8" placeholder="Enter new password" onkeyup="checkPasswordStrength()" autocomplete="new-password">
+                    <input type="password" class="form-control" name="password" id="password" required minlength="8" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{8,}" placeholder="Enter new password" onkeyup="checkPasswordStrength()" autocomplete="new-password">
                     <button type="button" class="eye-toggle position-absolute text-secondary z-3 border-0 bg-transparent" id="togglePassword" style="right: 10px; top: 50%; transform: translateY(-50%);">
                         <i class="bi bi-eye"></i>
                     </button>
@@ -191,30 +191,23 @@
         }
 
         document.getElementById('resetPasswordForm').addEventListener('submit', function(e) {
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirm_password').value;
+            const passwordInput = document.getElementById('password');
+            const confirmPasswordInput = document.getElementById('confirm_password');
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
             const resetBtn = document.getElementById('resetBtn');
             
-            if (password.length < 8) {
+            if (!passwordInput.checkValidity()) {
                 e.preventDefault();
-                alert('Password must be at least 8 characters long');
-                document.getElementById('password').focus();
+                passwordInput.reportValidity();
+                passwordInput.focus();
                 return;
             }
-            
-            const hasUppercase = /[A-Z]/.test(password);
-            const hasLowercase = /[a-z]/.test(password);
-            if (!hasUppercase || !hasLowercase) {
+
+            if (!confirmPasswordInput.checkValidity()) {
                 e.preventDefault();
-                alert('Password must contain both uppercase and lowercase letters');
-                document.getElementById('password').focus();
-                return;
-            }
-            
-            if (!/[0-9]/.test(password)) {
-                e.preventDefault();
-                alert('Password must contain at least one number');
-                document.getElementById('password').focus();
+                confirmPasswordInput.reportValidity();
+                confirmPasswordInput.focus();
                 return;
             }
             
