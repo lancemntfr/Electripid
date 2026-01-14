@@ -4,6 +4,12 @@
 
     require_once __DIR__ . '/../../connect.php';
     require_once __DIR__ . '/../includes/validation.php';
+    require_once __DIR__ . '/../api/update_sync_user.php';
+
+    function response($data) {
+        echo json_encode($data);
+        exit;
+    }
 
     // Validate request
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -21,14 +27,10 @@
         response(['success' => false, 'error' => 'Invalid JSON data']);
     }
 
-    function response($data) {
-        echo json_encode($data);
-        exit;
-    }
-
     $fname = trim($data['fname'] ?? '');
     $lname = trim($data['lname'] ?? '');
     $email = trim($data['email'] ?? '');
+    $cp_number = trim($data['cp_number'] ?? '');
     $city = trim($data['city'] ?? '');
     $barangay = trim($data['barangay'] ?? '');
     $provider_id = intval($data['provider_id'] ?? 0);
@@ -43,6 +45,12 @@
     // Validate email format
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         response(['success' => false, 'error' => 'Please enter a valid email address.']);
+    }
+
+    // Validate phone number if provided
+    if (!empty($cp_number) && !preg_match('/^[0-9]{7,15}$/', $cp_number)) {
+        response(['success' => false, 'error' => 'Please enter a valid phone number.']);
+        exit;
     }
 
     // Check if email is being changed and if new email already exists
@@ -93,11 +101,12 @@
     $fname = mysqli_real_escape_string($conn, $fname);
     $lname = mysqli_real_escape_string($conn, $lname);
     $email = mysqli_real_escape_string($conn, $email);
+    $cp_number = mysqli_real_escape_string($conn, $cp_number);
     $city = mysqli_real_escape_string($conn, $city);
     $barangay = mysqli_real_escape_string($conn, $barangay);
 
     // Update USER table
-    $update_user_query = "UPDATE USER SET fname = '$fname', lname = '$lname', email = '$email', city = '$city', barangay = '$barangay'";
+    $update_user_query = "UPDATE USER SET fname = '$fname', lname = '$lname', email = '$email', cp_number = '$cp_number', city = '$city', barangay = '$barangay'";
     
     // Update password if provided
     if (!empty($password)) {
@@ -144,10 +153,17 @@
         }
     }
 
-    // Update session data
-    $_SESSION['fname'] = $fname;
-    $_SESSION['lname'] = $lname;
-    $_SESSION['email'] = $email;
+    syncUserToAirlyft($user_id);
+
+    $raw_fname = $fname;
+    $raw_lname = $lname;
+    $raw_email = $email;
+    $raw_cp_number = $cp_number;
+
+    $_SESSION['fname'] = $raw_fname;
+    $_SESSION['lname'] = $raw_lname;
+    $_SESSION['email'] = $raw_email;
+    $_SESSION['cp_number'] = $raw_cp_number;
 
     response(['success' => true, 'message' => 'Profile updated successfully']);
     
