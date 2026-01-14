@@ -165,19 +165,19 @@
       <div class="col-lg-3 col-md-6">
         <div class="info-card h-100 d-flex flex-column">
           <div class="info-card-icon bg-success bg-opacity-10 text-success">
-            <i class="bi bi-plug"></i>
+            <i class="bi bi-graph-up"></i>
           </div>
-          <h6 class="text-muted mb-1">Active Appliances</h6>
-          <h4 class="mb-0"><span id="activeAppliances">0</span> Devices</h4>
+          <h6 class="text-muted mb-1">Real-time Consumption</h6>
+          <h4 class="mb-0"><span id="thisMonthKwh">0.0</span> kWh</h4>
         </div>
       </div>
       <div class="col-lg-3 col-md-6">
         <div class="info-card h-100 d-flex flex-column">
           <div class="info-card-icon bg-success bg-opacity-10 text-success">
-            <i class="bi bi-graph-up"></i>
+            <i class="bi bi-cloud-sun"></i>
           </div>
-          <h6 class="text-muted mb-1">Real-time Consumption</h6>
-          <h4 class="mb-0"><span id="thisMonthKwh">0.0</span> kWh</h4>
+          <h6 class="text-muted mb-1">Forecasted Cost</h6>
+          <h4 class="mb-0">₱<span id="forecastedCost">0</span></h4>
         </div>
       </div>
     </div>
@@ -206,49 +206,56 @@
 
     <!-- Main Content Areas -->
     <div class="row g-4 mb-4">
-      <div class="col-lg-6">
-        <div class="chart-container h-100 d-flex flex-column">
-          <h5 class="mb-3"><i class="bi bi-list-check me-2"></i>Your Appliances & Add New Appliances</h5>
-          <p class="text-muted">Manage your registered appliances and add new ones to track</p>
+      <!-- Appliances (9 columns) -->
+      <div class="col-lg-9">
+        <div class="chart-container">
+          <h5 class="mb-3"><i class="bi bi-list-check me-2"></i>Appliances</h5>
 
-          <!-- Add Appliance Form -->
-          <div class="mb-3">
-            <div class="row g-2 mb-2">
-              <div class="col-12 col-md-6">
-                <input type="text" id="deviceName" class="form-control form-control-sm" placeholder="Device Name">
+          <div class="row g-3">
+            <!-- Add Appliance Form (vertical) -->
+            <div class="col-lg-4">
+              <div class="mb-2">
+                <label class="form-label small text-muted mb-1">Device Name</label>
+                <input type="text" id="deviceName" class="form-control form-control-sm" placeholder="e.g. Aircon">
               </div>
-              <div class="col-6 col-md-3">
-                <input type="number" id="devicePower" class="form-control form-control-sm" placeholder="Power (kWh)">
+              <div class="mb-2">
+                <label class="form-label small text-muted mb-1">Power (Watts)</label>
+                <input type="number" id="devicePower" class="form-control form-control-sm" placeholder="e.g. 1200">
               </div>
-              <div class="col-6 col-md-3">
-                <input type="number" id="deviceHours" class="form-control form-control-sm" placeholder="Hours/Day">
+              <div class="mb-2">
+                <label class="form-label small text-muted mb-1">Hours per Day</label>
+                <input type="number" id="deviceHours" class="form-control form-control-sm" placeholder="e.g. 8">
               </div>
+              <div class="mb-3">
+                <label class="form-label small text-muted mb-1">Usage per Week (Days)</label>
+                <input type="number" id="deviceUsagePerWeek" class="form-control form-control-sm" placeholder="e.g. 5">
+              </div>
+              <button class="btn btn-primary btn-sm w-100" onclick="addAppliance()">
+                <i class="bi bi-plus-circle me-1"></i>Add Appliance
+              </button>
             </div>
-            <div class="row g-2 mb-2">
-              <div class="col-12 col-md-6">
-                <input type="number" id="deviceUsagePerWeek" class="form-control form-control-sm" placeholder="Usage/Week">
-              </div>
-              <div class="col-12 col-md-6">
-                <button class="btn btn-primary btn-sm w-100" onclick="addAppliance()">
-                  <i class="bi bi-plus-circle me-2"></i>Add Appliance
-                </button>
-              </div>
-            </div>
-          </div>
 
-          <!-- Appliance List -->
-          <div id="applianceDisplayList" class="flex-grow-1" style="max-height: 120px; overflow-y: auto;">
-            <div class="text-center text-muted small py-3">
-              No appliances tracked yet. Add one to get started!
+            <!-- Appliance List (scrollable) -->
+            <div class="col-lg-8 d-flex flex-column">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-semibold">Active Appliances</span>
+                <span class="badge bg-primary" id="activeApplianceCount">0</span>
+              </div>
+              <div id="applianceDisplayList" class="flex-grow-1" style="max-height: 280px; overflow-y: auto;">
+                <div class="text-center text-muted small py-3">
+                  No appliances tracked yet. Add one to get started!
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="col-lg-6">
+      <!-- Energy Overview (3 columns) -->
+      <div class="col-lg-3">
         <div class="chart-container h-100 d-flex flex-column">
           <h5 class="mb-3"><i class="bi bi-bar-chart me-2"></i>Energy Overview</h5>
-          <p class="text-muted">Visual representation of your energy consumption patterns</p>
+          <p class="text-muted">Predicted cost of your energy consumption</p>
           <div class="mt-4 flex-grow-1">
             <div class="mb-3">
               <div class="small text-secondary mb-1">Daily Consumption</div>
@@ -258,6 +265,63 @@
               <div class="small text-secondary mb-1">Monthly Cost</div>
               <div class="h4 mb-0">₱<span id="monthlyCost">0</span></div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Appliance Modal -->
+    <div class="modal fade" id="editApplianceModal" tabindex="-1" aria-labelledby="editApplianceModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editApplianceModalLabel">Edit Appliance</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label small text-muted">Device Name</label>
+              <input type="text" id="editDeviceName" class="form-control" placeholder="e.g. Aircon">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small text-muted">Power (Watts)</label>
+              <input type="number" id="editDevicePower" class="form-control" placeholder="e.g. 1200">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small text-muted">Hours per Day</label>
+              <input type="number" id="editDeviceHours" class="form-control" placeholder="e.g. 8">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small text-muted">Usage per Week (Days)</label>
+              <input type="number" id="editDeviceUsagePerWeek" class="form-control" placeholder="e.g. 5">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="saveEditedAppliance()">
+              <i class="bi bi-check-circle me-1"></i>Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Appliance Confirmation Modal -->
+    <div class="modal fade" id="deleteApplianceModal" tabindex="-1" aria-labelledby="deleteApplianceModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title" id="deleteApplianceModalLabel">Remove Appliance</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body text-center">
+            <p class="mb-0">Are you sure you want to remove this appliance from your list?</p>
+          </div>
+          <div class="modal-footer justify-content-center border-0 pt-0">
+            <button type="button" class="btn btn-outline-secondary btn-sm px-4" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-danger btn-sm px-4" onclick="confirmDeleteAppliance()">
+              <i class="bi bi-trash me-1"></i>Delete
+            </button>
           </div>
         </div>
       </div>

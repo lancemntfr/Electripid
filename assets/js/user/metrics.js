@@ -4,15 +4,15 @@ function updateAllMetrics() {
   const totalCost = totalKwh * currentRate;
   const dailyKwh = totalKwh / 30;
 
-  const activeAppliancesEl = document.getElementById('activeAppliances');
   const thisMonthKwhEl = document.getElementById('thisMonthKwh');
   const dailyConsumptionEl = document.getElementById('dailyConsumption');
   const monthlyCostEl = document.getElementById('monthlyCost');
+  const forecastedCostEl = document.getElementById('forecastedCost');
 
-  if (activeAppliancesEl) activeAppliancesEl.textContent = appliances.length;
   if (thisMonthKwhEl) thisMonthKwhEl.textContent = totalKwh.toFixed(1);
   if (dailyConsumptionEl) dailyConsumptionEl.textContent = dailyKwh.toFixed(2);
   if (monthlyCostEl) monthlyCostEl.textContent = Math.round(totalCost);
+  if (forecastedCostEl) forecastedCostEl.textContent = Math.round(totalCost);
 
   // Save electricity reading
   if (totalKwh > 0) {

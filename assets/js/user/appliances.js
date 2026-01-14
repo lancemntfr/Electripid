@@ -1,4 +1,6 @@
 // Appliance management functionality
+let currentEditingApplianceId = null;
+let editApplianceModalInstance = null;
 function loadAppliances() {
   // Process appliance data (calculate monthly usage, normalize names)
   appliances = appliances.map(app => {
@@ -68,13 +70,30 @@ async function addAppliance() {
   }
 }
 
-async function removeApplianceDB(applianceId) {
-  if (confirm('Are you sure you want to remove this appliance?')) {
+let currentDeletingApplianceId = null;
+let deleteApplianceModalInstance = null;
+
+function openDeleteApplianceModal(applianceId) {
+  currentDeletingApplianceId = Number(applianceId);
+  const modalEl = document.getElementById('deleteApplianceModal');
+  if (!modalEl || typeof bootstrap === 'undefined') return;
+
+  if (!deleteApplianceModalInstance) {
+    deleteApplianceModalInstance = new bootstrap.Modal(modalEl);
+  }
+
+  deleteApplianceModalInstance.show();
+}
+
+async function confirmDeleteAppliance() {
+  if (!currentDeletingApplianceId) return;
+
+  try {
     const response = await fetch('appliances/remove_appliance.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        appliance_id: applianceId,
+        appliance_id: currentDeletingApplianceId,
         user_id: userId
       })
     });
@@ -82,16 +101,29 @@ async function removeApplianceDB(applianceId) {
     const result = await response.json();
 
     if (result.success) {
+      if (deleteApplianceModalInstance) {
+        deleteApplianceModalInstance.hide();
+      }
+      currentDeletingApplianceId = null;
       await refreshAppliances();
     } else {
       alert('Error: ' + (result.error || 'Failed to remove appliance'));
     }
+  } catch (error) {
+    console.error('Error removing appliance:', error);
+    alert('An error occurred. Please try again.');
   }
 }
 
 function updateApplianceDisplay() {
   const container = document.getElementById('applianceDisplayList');
+  const countBadge = document.getElementById('activeApplianceCount');
   if (!container) return;
+
+  if (countBadge) {
+    countBadge.textContent = appliances.length || 0;
+    countBadge.className = 'badge ' + (appliances.length ? 'bg-primary' : 'bg-secondary');
+  }
 
   if (appliances.length === 0) {
     container.innerHTML = '<div class="text-center text-muted small py-3">No appliances tracked yet. Add one to get started!</div>';
@@ -101,7 +133,7 @@ function updateApplianceDisplay() {
   // Sort appliances by ID descending (newest first)
   const sortedAppliances = [...appliances].sort((a, b) => (b.appliance_id || 0) - (a.appliance_id || 0));
 
-  container.innerHTML = sortedAppliances.map(app => {
+  const listHtml = sortedAppliances.map(app => {
     const appName = app.name || app.appliance_name || 'Unknown';
     const monthlyKwh = parseFloat(app.monthly_kwh || 0);
     const cost = monthlyKwh * currentRate;
@@ -113,14 +145,98 @@ function updateApplianceDisplay() {
           <div class="d-flex justify-content-between align-items-center">
             <div>
               <h6 class="mb-1">${appName}</h6>
-              <small class="text-muted">${monthlyKwh.toFixed(2)} kWh/month</small>
+              <small class="text-muted">${monthlyKwh.toFixed(2)} kWh/month • ₱${cost.toFixed(2)}/mo</small>
             </div>
-            <button class="btn btn-sm btn-outline-danger" onclick="removeApplianceDB(${appId})">
-              <i class="bi bi-trash"></i>
-            </button>
+            <div class="d-flex align-items-center">
+              <button type="button" class="btn btn-sm btn-outline-secondary me-1" onclick="openEditApplianceModal(${appId})" title="Edit appliance">
+                <i class="bi bi-three-dots-vertical"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger" onclick="openDeleteApplianceModal(${appId})" title="Remove appliance">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
           </div>
         </div>
       </div>
     `;
   }).join('');
+
+  container.innerHTML = listHtml;
+}
+
+function openEditApplianceModal(applianceId) {
+  const numericId = Number(applianceId);
+  const app = appliances.find(a => Number(a.appliance_id || a.id || 0) === numericId);
+  if (!app) return;
+
+  currentEditingApplianceId = numericId;
+
+  const nameInput = document.getElementById('editDeviceName');
+  const powerInput = document.getElementById('editDevicePower');
+  const hoursInput = document.getElementById('editDeviceHours');
+  const usageInput = document.getElementById('editDeviceUsagePerWeek');
+
+  if (!nameInput || !powerInput || !hoursInput || !usageInput) return;
+
+  const powerWatts = parseFloat(app.power_kwh || 0) * 1000;
+
+  nameInput.value = app.name || app.appliance_name || '';
+  powerInput.value = powerWatts ? powerWatts.toFixed(0) : '';
+  hoursInput.value = app.hours_per_day || '';
+  usageInput.value = app.usage_per_week || '';
+
+  const modalEl = document.getElementById('editApplianceModal');
+  if (!modalEl) return;
+
+  if (!editApplianceModalInstance && typeof bootstrap !== 'undefined') {
+    editApplianceModalInstance = new bootstrap.Modal(modalEl);
+  }
+
+  if (editApplianceModalInstance) {
+    editApplianceModalInstance.show();
+  }
+}
+
+async function saveEditedAppliance() {
+  if (!currentEditingApplianceId) return;
+
+  const name = document.getElementById('editDeviceName').value.trim();
+  const powerWatts = parseFloat(document.getElementById('editDevicePower').value);
+  const hours = parseFloat(document.getElementById('editDeviceHours').value);
+  const usagePerWeek = parseFloat(document.getElementById('editDeviceUsagePerWeek').value);
+
+  if (!name || !powerWatts || !hours || !usagePerWeek) {
+    alert('Please fill in all fields');
+    return;
+  }
+
+  try {
+    const response = await fetch('appliances/update_appliance.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        appliance_id: currentEditingApplianceId,
+        name: name,
+        power: powerWatts,
+        hours: hours,
+        usage_per_week: usagePerWeek,
+        rate: currentRate
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      if (editApplianceModalInstance) {
+        editApplianceModalInstance.hide();
+      }
+      currentEditingApplianceId = null;
+      await refreshAppliances();
+    } else {
+      alert('Error: ' + (result.error || 'Failed to update appliance'));
+    }
+  } catch (error) {
+    console.error('Error updating appliance:', error);
+    alert('An error occurred. Please try again.');
+  }
 }
