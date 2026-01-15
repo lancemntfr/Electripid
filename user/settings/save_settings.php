@@ -27,53 +27,6 @@
         response(['success' => false, 'error' => 'Invalid JSON data']);
     }
 
-    // Handle monthly budget update separately
-    if (isset($data['monthly_budget'])) {
-        $monthly_budget = floatval($data['monthly_budget']);
-        
-        if ($monthly_budget < 0) {
-            response(['success' => false, 'error' => 'Budget amount must be greater than or equal to 0.']);
-        }
-        
-        $user_id_escaped = mysqli_real_escape_string($conn, $user_id);
-        $monthly_budget_escaped = mysqli_real_escape_string($conn, $monthly_budget);
-        
-        // Check if household exists
-        $check_household_query = "SELECT household_id FROM HOUSEHOLD WHERE user_id = '$user_id_escaped'";
-        $check_household_result = executeQuery($check_household_query);
-        
-        if ($check_household_result && mysqli_num_rows($check_household_result) > 0) {
-            // Update existing household budget
-            $household_row = mysqli_fetch_assoc($check_household_result);
-            $household_id = mysqli_real_escape_string($conn, $household_row['household_id']);
-            $update_budget_query = "UPDATE HOUSEHOLD SET monthly_budget = '$monthly_budget_escaped' WHERE household_id = '$household_id'";
-            $update_budget_result = executeQuery($update_budget_query);
-            
-            if (!$update_budget_result) {
-                response(['success' => false, 'error' => 'Failed to update monthly budget.']);
-            }
-        } else {
-            // Create household with budget (need provider_id, get default or first available)
-            $provider_query = "SELECT provider_id FROM ELECTRICITY_PROVIDER LIMIT 1";
-            $provider_result = executeQuery($provider_query);
-            
-            if ($provider_result && mysqli_num_rows($provider_result) > 0) {
-                $provider_row = mysqli_fetch_assoc($provider_result);
-                $provider_id = mysqli_real_escape_string($conn, $provider_row['provider_id']);
-                $insert_household_query = "INSERT INTO HOUSEHOLD (user_id, provider_id, monthly_budget) VALUES ('$user_id_escaped', '$provider_id', '$monthly_budget_escaped')";
-                $insert_household_result = executeQuery($insert_household_query);
-                
-                if (!$insert_household_result) {
-                    response(['success' => false, 'error' => 'Failed to create household with budget.']);
-                }
-            } else {
-                response(['success' => false, 'error' => 'No electricity provider found. Please set a provider first.']);
-            }
-        }
-        
-        response(['success' => true, 'message' => 'Monthly budget updated successfully']);
-    }
-
     $fname = trim($data['fname'] ?? '');
     $lname = trim($data['lname'] ?? '');
     $email = trim($data['email'] ?? '');

@@ -8,39 +8,11 @@ function updateAllMetrics() {
   const dailyConsumptionEl = document.getElementById('dailyConsumption');
   const monthlyCostEl = document.getElementById('monthlyCost');
   const forecastedCostEl = document.getElementById('forecastedCost');
-  const budgetStatusBadge = document.getElementById('budgetStatusBadge');
-  const budgetStatusText = document.getElementById('budgetStatusText');
 
-  // Real-time consumption stays at 0 (no hardware)
-  if (thisMonthKwhEl) thisMonthKwhEl.textContent = '0.0';
+  if (thisMonthKwhEl) thisMonthKwhEl.textContent = totalKwh.toFixed(1);
   if (dailyConsumptionEl) dailyConsumptionEl.textContent = dailyKwh.toFixed(2);
   if (monthlyCostEl) monthlyCostEl.textContent = Math.round(totalCost);
-  // Forecasted monthly consumption uses the equation from real-time consumption (sum of monthly_kwh from appliances)
-  if (forecastedCostEl) forecastedCostEl.textContent = totalKwh.toFixed(1);
-
-  // Update budget status
-  if (budgetStatusBadge && budgetStatusText && monthlyBudget > 0) {
-    const budgetExceeded = totalCost > monthlyBudget;
-    const budgetPercentage = ((totalCost / monthlyBudget) * 100).toFixed(1);
-    const difference = Math.abs(totalCost - monthlyBudget).toFixed(2);
-    
-    if (budgetExceeded) {
-      budgetStatusBadge.className = 'badge bg-danger';
-      budgetStatusBadge.textContent = 'Exceeded';
-      budgetStatusText.textContent = `₱${difference} over budget (${budgetPercentage}%)`;
-      budgetStatusText.className = 'small text-danger';
-    } else {
-      budgetStatusBadge.className = 'badge bg-success';
-      budgetStatusBadge.textContent = 'Within Budget';
-      budgetStatusText.textContent = `₱${difference} remaining (${budgetPercentage}%)`;
-      budgetStatusText.className = 'small text-success';
-    }
-  } else if (budgetStatusBadge && budgetStatusText) {
-    budgetStatusBadge.className = 'badge bg-secondary';
-    budgetStatusBadge.textContent = 'No Budget Set';
-    budgetStatusText.textContent = 'Set a monthly budget in settings';
-    budgetStatusText.className = 'small text-muted';
-  }
+  if (forecastedCostEl) forecastedCostEl.textContent = Math.round(totalCost);
 
   // Save electricity reading
   if (totalKwh > 0) {

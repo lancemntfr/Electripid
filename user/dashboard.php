@@ -175,8 +175,8 @@ if ($household_result && $household_result->num_rows > 0) {
           <div class="info-card-icon bg-success bg-opacity-10 text-success">
             <i class="bi bi-cloud-sun"></i>
           </div>
-          <h6 class="text-muted mb-1">Forecasted Consumption for a Month</h6>
-          <h4 class="mb-0"><span id="forecastedCost">0</span> kWh</h4>
+          <h6 class="text-muted mb-1">Forecasted Cost</h6>
+          <h4 class="mb-0">₱<span id="forecastedCost">0</span></h4>
         </div>
       </div>
     </div>
@@ -265,13 +265,6 @@ if ($household_result && $household_result->num_rows > 0) {
             <div class="mb-3">
               <div class="small text-secondary mb-1">Monthly Cost</div>
               <div class="h4 mb-0">₱<span id="monthlyCost">0</span></div>
-            </div>
-            <div class="mb-3">
-              <div class="small text-secondary mb-1">Budget Status</div>
-              <div id="budgetStatus" class="d-flex align-items-center gap-2">
-                <span class="badge" id="budgetStatusBadge">--</span>
-                <span class="small text-muted" id="budgetStatusText">--</span>
-              </div>
             </div>
           </div>
         </div>
