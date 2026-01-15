@@ -299,16 +299,28 @@
                     </div>
                 <?php endif; ?>
 
-                <?php if (isset($_GET['error']) && $_GET['error'] === 'email_taken'): ?>
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i>This email address is already registered by another user. Please choose a different email address.
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
+                <?php if (isset($_GET['error'])): ?>
+                    <?php if ($_GET['error'] === 'email_taken'): ?>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>This email address is already registered by another user. Please choose a different email address.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    <?php elseif ($_GET['error'] === 'phone_taken'): ?>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>This phone number is already registered by another user. Please choose a different phone number.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    <?php elseif ($_GET['error'] === 'sms_send_failed'): ?>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>Failed to send SMS. Please try again later.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    <?php endif; ?>
                 <?php endif; ?>
 
                 <?php if (isset($_GET['verified']) && $_GET['verified'] === '1'): ?>
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        <i class="bi bi-check-circle-fill me-2"></i>Email verified successfully!
+                        <i class="bi bi-check-circle-fill me-2"></i>Verification completed successfully!
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 <?php endif; ?>
@@ -530,10 +542,10 @@
                                 <?php endif; ?>
                             </span>
                         </div>
-                        <div id="phoneVerifyLinkModal" style="<?= (!empty($user['cp_number']) && !$phone_verified_status) ? '' : 'display:none;' ?>">
-                            <small class="text-danger">
-                                <a href="#" class="text-decoration-none" onclick="event.preventDefault(); bootstrap.Modal.getInstance(document.getElementById('contactsModal')).hide(); openPhoneModal();">Click here to verify phone</a>
-                            </small>
+                        <div id="phoneVerifyButtonModal" style="display: none;" class="mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="verifyPhoneFromModal(event)">
+                                <i class="bi bi-phone me-1"></i>Verify Phone
+                            </button>
                         </div>
                     </div>
                     <div id="contactsAlert"></div>
@@ -833,9 +845,12 @@
 
         function openContactsModal() {
             document.getElementById('contactsAlert').innerHTML = '';
+            // Reset email verification button state
             document.getElementById('emailVerifyButtonModal').style.display = 'none';
             document.getElementById('emailStatusTextModal').textContent = '<?= $email_verified ? 'Verified' : 'Not verified' ?>';
             document.getElementById('emailStatusTextModal').className = 'text-<?= $email_verified ? 'success' : 'danger' ?> small';
+            // Reset phone verification button state
+            document.getElementById('phoneVerifyButtonModal').style.display = 'none';
             const modal = new bootstrap.Modal(document.getElementById('contactsModal'));
             modal.show();
         }
@@ -961,79 +976,100 @@
         }
 
         function verifyEmailFromModal(event) {
-            console.log('verifyEmailFromModal called');
+            // Prevent any default form submission
             if (event) {
                 event.preventDefault();
                 event.stopPropagation();
             }
 
-            try {
-                const emailInput = document.getElementById('contactsEmailInput');
-                const newEmail = emailInput ? emailInput.value.trim() : '';
+            // Get the new email address from the input field
+            const emailInput = document.getElementById('contactsEmailInput');
+            const newEmail = emailInput ? emailInput.value.trim() : '';
 
-                console.log('New email:', newEmail, 'Original email:', originalEmail);
-
-                if (!newEmail || newEmail === originalEmail) {
-                    alert('Please enter a different email address first.');
-                    return;
-                }
-
-                console.log('Closing modal...');
-
-                const modalElement = document.getElementById('contactsModal');
-                const modal = bootstrap.Modal.getInstance(modalElement);
-                if (modal) {
-                    modal.hide();
-                }
-
-                console.log('Setting timeout for redirect...');
-
-                modalElement.addEventListener('hidden.bs.modal', function() {
-                    console.log('Modal fully hidden, redirecting...');
-                    window.location.href = 'verification/email/request_verification.php?new_email=' + encodeURIComponent(newEmail);
-                }, { once: true });
-
-                setTimeout(() => {
-                    console.log('Fallback redirect after timeout');
-                    window.location.href = 'verification/email/request_verification.php?new_email=' + encodeURIComponent(newEmail);
-                }, 500);
-            } catch (error) {
-                console.error('Error in verifyEmailFromModal:', error);
-                alert('An error occurred. Please try again.');
+            if (!newEmail || newEmail === originalEmail) {
+                alert('Please enter a different email address first.');
+                return;
             }
+
+            // Close the modal
+            const modalElement = document.getElementById('contactsModal');
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) {
+                modal.hide();
+            }
+
+            // Then redirect to verification page with the new email
+            setTimeout(() => {
+                window.location.href = 'verification/email/request_verification.php?new_email=' + encodeURIComponent(newEmail);
+            }, 300);
+        }
+
+        function verifyPhoneFromModal(event) {
+            // Prevent any default form submission
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            // Get the new phone number from the input field
+            const phoneInput = document.getElementById('contactsPhoneInput');
+            const phoneDigits = phoneInput ? phoneInput.value.trim().replace(/\s/g, '') : '';
+
+            if (!phoneDigits || phoneDigits === originalPhoneDigits) {
+                alert('Please enter a different phone number first.');
+                return;
+            }
+
+            if (!/^[0-9]{10}$/.test(phoneDigits)) {
+                alert('Please enter a valid 10-digit phone number.');
+                return;
+            }
+
+            // Close the modal
+            const modalElement = document.getElementById('contactsModal');
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) {
+                modal.hide();
+            }
+
+            // Then redirect to verification page with the new phone
+            setTimeout(() => {
+                window.location.href = 'verification/sms/request_verification.php?new_phone=' + encodeURIComponent(phoneDigits);
+            }, 300);
         }
 
         function checkPhoneChanged() {
             const phoneInput = document.getElementById('contactsPhoneInput');
             const phoneStatusText = document.getElementById('phoneStatusText');
-            const phoneVerifyLinkModal = document.getElementById('phoneVerifyLinkModal');
+            const phoneVerifyButtonModal = document.getElementById('phoneVerifyButtonModal');
             const digits = phoneInput.value.trim().replace(/\s/g, '');
 
             if (digits && digits !== originalPhoneDigits) {
-                // Phone has changed and is non-empty → mark as not verified and show link
+                // Phone has changed and is non-empty → mark as not verified and show button
                 phoneStatusText.textContent = 'Not verified';
                 phoneStatusText.className = 'text-danger small';
                 phoneStatusText.style.minWidth = '90px';
                 phoneStatusText.style.textAlign = 'right';
-                if (phoneVerifyLinkModal) {
-                    phoneVerifyLinkModal.style.display = 'block';
+                if (phoneVerifyButtonModal) {
+                    phoneVerifyButtonModal.style.display = 'block';
                 }
             } else {
+                // Revert to original state
                 if (!hasInitialPhone) {
                     phoneStatusText.textContent = 'add contact number';
                     phoneStatusText.className = 'text-secondary small';
                     phoneStatusText.style.minWidth = '90px';
                     phoneStatusText.style.textAlign = 'right';
-                    if (phoneVerifyLinkModal) {
-                        phoneVerifyLinkModal.style.display = 'none';
+                    if (phoneVerifyButtonModal) {
+                        phoneVerifyButtonModal.style.display = 'none';
                     }
                 } else {
                     phoneStatusText.textContent = phoneInitiallyVerified ? 'Verified' : 'Not verified';
                     phoneStatusText.className = 'text-' + (phoneInitiallyVerified ? 'success' : 'danger') + ' small';
                     phoneStatusText.style.minWidth = '90px';
                     phoneStatusText.style.textAlign = 'right';
-                    if (phoneVerifyLinkModal) {
-                        phoneVerifyLinkModal.style.display = phoneInitiallyVerified ? 'none' : 'block';
+                    if (phoneVerifyButtonModal) {
+                        phoneVerifyButtonModal.style.display = 'none';
                     }
                 }
             }
