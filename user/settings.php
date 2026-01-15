@@ -1422,14 +1422,15 @@
 
         async function saveBudget() {
             const budgetInput = document.getElementById('modalBudget');
-            const budget = parseFloat(budgetInput.value);
+            const budgetValue = budgetInput.value.trim();
+            const budget = parseFloat(budgetValue);
             const alertDiv = document.getElementById('budgetAlert');
             const saveBtn = document.getElementById('saveBudgetBtn');
 
-            if (!budgetInput.value || budget < 0) {
-                alertDiv.innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Please enter a valid budget amount.</div>';
-                    return;
-                }
+            if (!budgetValue || isNaN(budget) || budget < 0) {
+                alertDiv.innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Please enter a valid budget amount (must be 0 or greater).</div>';
+                return;
+            }
                 
             const originalText = saveBtn.innerHTML;
             saveBtn.disabled = true;

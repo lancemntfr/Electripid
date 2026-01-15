@@ -27,6 +27,76 @@
         response(['success' => false, 'error' => 'Invalid JSON data']);
     }
 
+    // Check if this is a budget-only update
+    $monthly_budget = isset($data['monthly_budget']) ? floatval($data['monthly_budget']) : null;
+    $is_budget_only = ($monthly_budget !== null && !isset($data['fname']) && !isset($data['email']));
+
+    // Handle budget-only update
+    if ($is_budget_only) {
+        if ($monthly_budget < 0) {
+            response(['success' => false, 'error' => 'Budget amount must be greater than or equal to 0.']);
+        }
+
+        $user_id_escaped = mysqli_real_escape_string($conn, $user_id);
+        $monthly_budget_escaped = mysqli_real_escape_string($conn, $monthly_budget);
+
+        // Check if household exists
+        $check_household_query = "SELECT household_id, provider_id FROM HOUSEHOLD WHERE user_id = '$user_id_escaped'";
+        $check_household_result = executeQuery($check_household_query);
+
+        if ($check_household_result && mysqli_num_rows($check_household_result) > 0) {
+            // Update existing household
+            $household_row = mysqli_fetch_assoc($check_household_result);
+            $household_id_escaped = mysqli_real_escape_string($conn, $household_row['household_id']);
+            $provider_id = intval($household_row['provider_id']);
+            
+            // If provider_id is 0 or null, we need to set a default or require it
+            if ($provider_id <= 0) {
+                // Get the first available provider as default
+                $default_provider_query = "SELECT provider_id FROM ELECTRICITY_PROVIDER ORDER BY provider_id LIMIT 1";
+                $default_provider_result = executeQuery($default_provider_query);
+                if ($default_provider_result && mysqli_num_rows($default_provider_result) > 0) {
+                    $default_provider = mysqli_fetch_assoc($default_provider_result);
+                    $provider_id = intval($default_provider['provider_id']);
+                    $provider_id_escaped = mysqli_real_escape_string($conn, $provider_id);
+                    $update_household_query = "UPDATE HOUSEHOLD SET monthly_budget = '$monthly_budget_escaped', provider_id = '$provider_id_escaped' WHERE household_id = '$household_id_escaped'";
+                } else {
+                    $update_household_query = "UPDATE HOUSEHOLD SET monthly_budget = '$monthly_budget_escaped' WHERE household_id = '$household_id_escaped'";
+                }
+            } else {
+                $update_household_query = "UPDATE HOUSEHOLD SET monthly_budget = '$monthly_budget_escaped' WHERE household_id = '$household_id_escaped'";
+            }
+            
+            $update_household_result = executeQuery($update_household_query);
+            if (!$update_household_result) {
+                response(['success' => false, 'error' => 'Failed to update monthly budget.']);
+            }
+        } else {
+            // Create new household with budget
+            // Get default provider if none exists
+            $default_provider_query = "SELECT provider_id FROM ELECTRICITY_PROVIDER ORDER BY provider_id LIMIT 1";
+            $default_provider_result = executeQuery($default_provider_query);
+            
+            if ($default_provider_result && mysqli_num_rows($default_provider_result) > 0) {
+                $default_provider = mysqli_fetch_assoc($default_provider_result);
+                $provider_id = intval($default_provider['provider_id']);
+                $provider_id_escaped = mysqli_real_escape_string($conn, $provider_id);
+                $insert_household_query = "INSERT INTO HOUSEHOLD (user_id, provider_id, monthly_budget) VALUES ('$user_id_escaped', '$provider_id_escaped', '$monthly_budget_escaped')";
+            } else {
+                // If no provider exists, insert without provider_id (but this shouldn't happen based on schema)
+                response(['success' => false, 'error' => 'No electricity provider found. Please set a provider first.']);
+            }
+            
+            $insert_household_result = executeQuery($insert_household_query);
+            if (!$insert_household_result) {
+                response(['success' => false, 'error' => 'Failed to create household with budget.']);
+            }
+        }
+
+        response(['success' => true, 'message' => 'Monthly budget updated successfully']);
+    }
+
+    // Continue with profile update logic
     $fname = trim($data['fname'] ?? '');
     $lname = trim($data['lname'] ?? '');
     $email = trim($data['email'] ?? '');
@@ -115,25 +185,72 @@
     syncUserToAirlyft($user_id);
 
     // Update or create household
-    if ($provider_id > 0) {
-        $provider_id_escaped = mysqli_real_escape_string($conn, $provider_id);
-        $check_household_query = "SELECT household_id FROM HOUSEHOLD WHERE user_id = '$user_id_escaped'";
+    $household_updated = false;
+    if ($provider_id > 0 || $monthly_budget !== null) {
+        $check_household_query = "SELECT household_id, provider_id, monthly_budget FROM HOUSEHOLD WHERE user_id = '$user_id_escaped'";
         $check_household_result = executeQuery($check_household_query);
 
         if ($check_household_result && mysqli_num_rows($check_household_result) > 0) {
+            // Update existing household
             $household_row = mysqli_fetch_assoc($check_household_result);
             $household_id_escaped = mysqli_real_escape_string($conn, $household_row['household_id']);
-            $update_household_query = "UPDATE HOUSEHOLD SET provider_id = '$provider_id_escaped' WHERE household_id = '$household_id_escaped'";
-            $update_household_result = executeQuery($update_household_query);
-            if (!$update_household_result) {
-                response(['success' => false, 'error' => 'Failed to update household settings.']);
+            $current_provider_id = intval($household_row['provider_id'] ?? 0);
+            
+            // Build update query
+            $update_fields = [];
+            
+            if ($provider_id > 0) {
+                $provider_id_escaped = mysqli_real_escape_string($conn, $provider_id);
+                $update_fields[] = "provider_id = '$provider_id_escaped'";
+            }
+            
+            if ($monthly_budget !== null && $monthly_budget >= 0) {
+                $monthly_budget_escaped = mysqli_real_escape_string($conn, $monthly_budget);
+                $update_fields[] = "monthly_budget = '$monthly_budget_escaped'";
+            }
+            
+            if (!empty($update_fields)) {
+                $update_household_query = "UPDATE HOUSEHOLD SET " . implode(', ', $update_fields) . " WHERE household_id = '$household_id_escaped'";
+                $update_household_result = executeQuery($update_household_query);
+                if (!$update_household_result) {
+                    response(['success' => false, 'error' => 'Failed to update household settings.']);
+                }
+                $household_updated = true;
             }
         } else {
-            $insert_household_query = "INSERT INTO HOUSEHOLD (user_id, provider_id) VALUES ('$user_id_escaped', '$provider_id_escaped')";
+            // Create new household
+            $insert_fields = ['user_id'];
+            $insert_values = ["'$user_id_escaped'"];
+            
+            if ($provider_id > 0) {
+                $provider_id_escaped = mysqli_real_escape_string($conn, $provider_id);
+                $insert_fields[] = 'provider_id';
+                $insert_values[] = "'$provider_id_escaped'";
+            } else {
+                // Get default provider if none provided
+                $default_provider_query = "SELECT provider_id FROM ELECTRICITY_PROVIDER ORDER BY provider_id LIMIT 1";
+                $default_provider_result = executeQuery($default_provider_query);
+                if ($default_provider_result && mysqli_num_rows($default_provider_result) > 0) {
+                    $default_provider = mysqli_fetch_assoc($default_provider_result);
+                    $default_provider_id = intval($default_provider['provider_id']);
+                    $default_provider_id_escaped = mysqli_real_escape_string($conn, $default_provider_id);
+                    $insert_fields[] = 'provider_id';
+                    $insert_values[] = "'$default_provider_id_escaped'";
+                }
+            }
+            
+            if ($monthly_budget !== null && $monthly_budget >= 0) {
+                $monthly_budget_escaped = mysqli_real_escape_string($conn, $monthly_budget);
+                $insert_fields[] = 'monthly_budget';
+                $insert_values[] = "'$monthly_budget_escaped'";
+            }
+            
+            $insert_household_query = "INSERT INTO HOUSEHOLD (" . implode(', ', $insert_fields) . ") VALUES (" . implode(', ', $insert_values) . ")";
             $insert_household_result = executeQuery($insert_household_query);
             if (!$insert_household_result) {
                 response(['success' => false, 'error' => 'Failed to create household settings.']);
             }
+            $household_updated = true;
         }
     }
 
