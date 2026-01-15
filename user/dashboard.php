@@ -391,178 +391,172 @@ if ($household_result && $household_result->num_rows > 0) {
     </div>
   </div>
 
-  <!-- Chatbot Widget -->
-  <div id="chatbotWidget" class="chatbot-widget" style="display: none;">
-    <div class="chatbot-container bg-white d-flex flex-column shadow-lg" style="border-radius: 16px 16px 0 0;">
+<!-- Chatbot Widget -->
+<div id="chatbotWidget" class="chatbot-widget" style="display: none;">
+  <div class="chatbot-container bg-white d-flex flex-column shadow-lg" style="border-radius: 16px 16px 0 0;">
 
-      <div class="chatbot-header d-flex justify-content-between align-items-center p-3 text-white rounded-top" style="background: #1E88E5 !important;">
-        <div>
-          <h5 class="mb-0"><span style="color: #00c853;">⚡</span> Electripid AI Assistant</h5>
-          <p class="mb-0 small opacity-75" style="font-size: 0.7rem;">Powered by Ollama</p>
-        </div>
-        <div class="d-flex gap-2">
-          <button class="btn btn-sm btn-light opacity-75" onclick="clearChatHistory()" title="Clear chat">
-            <i class="bi bi-trash"></i>
-          </button>
-          <button class="btn btn-sm btn-light opacity-75" onclick="closeChatbot()">
-            <i class="bi bi-x-lg"></i>
-          </button>
-        </div>
-        <button class="modal-close border-0 bg-transparent rounded-circle d-flex align-items-center justify-content-center text-white" style="width: 32px; height: 32px;" onclick="closeChatbot()">&times;</button>
+    <!-- Header -->
+    <div class="chatbot-header d-flex justify-content-between align-items-center p-3 text-white rounded-top"
+      style="background: #1E88E5 !important;">
+      <div>
+        <h5 class="mb-0">
+          <span style="color: #00c853;">⚡</span> Electripid AI Assistant
+        </h5>
       </div>
 
-      <div class="chatbot-messages flex-fill p-3 overflow-auto" id="chatbotMessages" style="background: #f8f9fa;">
-        <div class="bot-message d-flex gap-2 mb-3">
-          <div class="message-avatar rounded-circle d-flex align-items-center justify-content-center" style="flex-shrink: 0; width: 30px; height: 30px; background: #1E88E5 !important; color: white; font-size: 0.9rem;">🤖</div>
-          <div class="message-content bg-white p-2 rounded-3 small shadow-sm">
-            Hello! I'm your Electripid assistant powered by AI. I can help you with:
-            <br>• Energy consumption analysis
-            <br>• Money-saving tips
-            <br>• Appliance recommendations
-            <br>• Bill estimates
-            <br><br>How can I help you today?
-          </div>
-        </div>
-      </div>
+      <!-- Header Buttons -->
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-light opacity-75"
+          onclick="clearChatHistory()" title="Clear chat">
+          <i class="bi bi-trash"></i>
+        </button>
 
-      <div class="chatbot-input d-flex gap-2 p-3 bg-white border-top rounded-bottom">
-        <input
-          type="text"
-          id="chatInput"
-          class="form-control flex-fill"
-          placeholder="Ask me anything about energy..."
-          onkeypress="handleChatKeypress(event)"
-          style="border-radius: 20px; border: 2px solid #e9ecef; font-size: 0.85rem;">
-        <button
-          class="btn text-white rounded-circle d-flex align-items-center justify-content-center"
-          onclick="sendMessage()"
-          style="width: 38px; height: 38px; background: #1E88E5 !important; border: none;">
-          <i class="bi bi-send-fill"></i>
+        <!-- SINGLE EXIT BUTTON -->
+        <button class="btn btn-sm btn-light opacity-75"
+          onclick="closeChatbot()" title="Close chat">
+          <i class="bi bi-x-lg"></i>
         </button>
       </div>
     </div>
+
+    <!-- Messages -->
+    <div class="chatbot-messages flex-fill p-3 overflow-auto"
+      id="chatbotMessages" style="background: #f8f9fa;">
+      <div class="bot-message d-flex gap-2 mb-3">
+        <div class="message-avatar rounded-circle d-flex align-items-center justify-content-center"
+          style="flex-shrink: 0; width: 30px; height: 30px; background: #1E88E5 !important; color: white; font-size: 0.9rem;">
+          🤖
+        </div>
+        <div class="message-content bg-white p-2 rounded-3 small shadow-sm">
+          Hello! I'm your Electripid assistant powered by AI. I can help you with:
+          <br>• Energy consumption analysis
+          <br>• Money-saving tips
+          <br>• Appliance recommendations
+          <br>• Bill estimates
+          <br><br>How can I help you today?
+        </div>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div class="chatbot-input d-flex gap-2 p-3 bg-white border-top rounded-bottom">
+      <input
+        type="text"
+        id="chatInput"
+        class="form-control flex-fill"
+        placeholder="Ask me anything about energy..."
+        onkeypress="handleChatKeypress(event)"
+        style="border-radius: 20px; border: 2px solid #e9ecef; font-size: 0.85rem;">
+      <button
+        class="btn text-white rounded-circle d-flex align-items-center justify-content-center"
+        onclick="sendMessage()"
+        style="width: 38px; height: 38px; background: #1E88E5 !important; border: none;">
+        <i class="bi bi-send-fill"></i>
+      </button>
+    </div>
   </div>
+</div>
 
-  <style>
-    @keyframes typing {
+<style>
+@keyframes typing {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-10px); }
+}
 
-      0%,
-      60%,
-      100% {
-        transform: translateY(0);
-      }
+.chatbot-messages {
+  scroll-behavior: smooth;
+}
 
-      30% {
-        transform: translateY(-10px);
-      }
-    }
+.chatbot-messages::-webkit-scrollbar {
+  width: 6px;
+}
 
-    .chatbot-messages {
-      scroll-behavior: smooth;
-    }
+.chatbot-messages::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
 
-    .chatbot-messages::-webkit-scrollbar {
-      width: 6px;
-    }
+.chatbot-messages::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
 
-    .chatbot-messages::-webkit-scrollbar-track {
-      background: #f1f1f1;
-      border-radius: 10px;
-    }
+.chatbot-messages::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
 
-    .chatbot-messages::-webkit-scrollbar-thumb {
-      background: #888;
-      border-radius: 10px;
-    }
+.message-content {
+  animation: fadeIn 0.3s ease-in;
+}
 
-    .chatbot-messages::-webkit-scrollbar-thumb:hover {
-      background: #555;
-    }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-    .message-content {
-      animation: fadeIn 0.3s ease-in;
-    }
+.chatbot-widget {
+  position: fixed;
+  bottom: 0;
+  right: 100px;
+  width: 350px;
+  height: 500px;
+  max-height: 80vh;
+  z-index: 1000;
+  animation: slideUp 0.3s ease-out;
+}
 
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
+.chatbot-widget .chatbot-container {
+  width: 100%;
+  height: 100%;
+  max-height: 500px;
+}
 
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
+.chatbot-widget .chatbot-messages {
+  max-height: 350px;
+}
 
-    .chatbot-widget {
-      position: fixed;
-      bottom: 0;
-      right: 100px;
-      width: 350px;
-      height: 500px;
-      max-height: 80vh;
-      z-index: 1000;
-      animation: slideUp 0.3s ease-out;
-    }
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-    .chatbot-widget .chatbot-container {
-      width: 100%;
-      height: 100%;
-      max-height: 500px;
-    }
+@media (max-width: 576px) {
+  .chatbot-widget {
+    width: calc(100% - 20px) !important;
+    right: 10px !important;
+    bottom: 0 !important;
+    height: 60vh !important;
+  }
 
-    .chatbot-widget .chatbot-messages {
-      max-height: 350px;
-    }
+  .chatbot-widget .chatbot-container {
+    height: 100% !important;
+  }
 
-    @keyframes slideUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
+  .message-content {
+    max-width: 85% !important;
+  }
+}
 
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
+#customAmount::-webkit-outer-spin-button,
+#customAmount::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
 
-    @media (max-width: 576px) {
-      .chatbot-widget {
-        width: calc(100% - 20px) !important;
-        right: 10px !important;
-        bottom: 0 !important;
-        height: 60vh !important;
-      }
+#customAmount[type=number] {
+  -moz-appearance: textfield;
+}
+</style>
 
-      .chatbot-widget .chatbot-container {
-        height: 100% !important;
-      }
+<!-- Floating Buttons -->
+<button class="floating-btn donation-btn" onclick="openDonationModal()">
+  <i class="bi bi-heart-fill"></i>
+</button>
 
-      .message-content {
-        max-width: 85% !important;
-      }
-    }
+<button class="floating-btn chatbot-btn" onclick="openChatbot()">
+  <i class="bi bi-chat-dots-fill"></i>
+</button>
 
-    #customAmount::-webkit-outer-spin-button,
-    #customAmount::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
-
-    #customAmount[type=number] {
-      -moz-appearance: textfield;
-    }
-  </style>
-
-  <button class="floating-btn donation-btn" onclick="openDonationModal()">
-    <i class="bi bi-heart-fill"></i>
-  </button>
-
-  <button class="floating-btn chatbot-btn" onclick="openChatbot()">
-    <i class="bi bi-chat-dots-fill"></i>
-  </button>
 
   <!-- PayPal SDK -->
   <script src="https://www.paypal.com/sdk/js?client-id=AWYEp1TqBsmBV8WfID4-nr3Soew-fL2FUx2ubkfXS_Qw41bKVP_YligWWRKjdYJSaQeZvDbSoKzrg5Ro&currency=USD"></script>
