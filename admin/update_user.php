@@ -1,16 +1,21 @@
 <?php
+// Prevent any output before JSON
+ob_start();
 session_start();
-header('Content-Type: application/json');
 
-require_once 'admin_auth.php';
 require_once '../connect.php';
+
+// Clear any output that might have been generated
+ob_clean();
+header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['success' => false, 'error' => 'Invalid request method']);
     exit;
 }
 
-if (!isset($_SESSION['admin_id'])) {
+// Check authentication - match admin_auth.php check
+if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     echo json_encode(['success' => false, 'error' => 'Not authenticated']);
     exit;
 }
@@ -21,8 +26,10 @@ $lname = trim($_POST['lname'] ?? '');
 $email = trim($_POST['email'] ?? '');
 $role = trim($_POST['role'] ?? 'user');
 $city = trim($_POST['city'] ?? '');
+$barangay = trim($_POST['barangay'] ?? '');
 $cp_number = trim($_POST['cp_number'] ?? '');
 $acc_status = trim($_POST['acc_status'] ?? 'active');
+$source_system = trim($_POST['source_system'] ?? 'Electripid');
 
 if (!$user_id || !$fname || !$lname || !$email || !$city) {
     echo json_encode(['success' => false, 'error' => 'All required fields must be filled']);
@@ -45,14 +52,21 @@ if (!in_array($acc_status, ['active', 'inactive', 'suspended'])) {
     $acc_status = 'active';
 }
 
+// Validate source_system
+if (!in_array($source_system, ['Electripid', 'Airlyft'])) {
+    $source_system = 'Electripid';
+}
+
 $user_id_escaped = mysqli_real_escape_string($conn, $user_id);
 $fname_escaped = mysqli_real_escape_string($conn, $fname);
 $lname_escaped = mysqli_real_escape_string($conn, $lname);
 $email_escaped = mysqli_real_escape_string($conn, $email);
 $role_escaped = mysqli_real_escape_string($conn, $role);
 $city_escaped = mysqli_real_escape_string($conn, $city);
+$barangay_escaped = mysqli_real_escape_string($conn, $barangay);
 $cp_number_escaped = mysqli_real_escape_string($conn, $cp_number);
 $acc_status_escaped = mysqli_real_escape_string($conn, $acc_status);
+$source_system_escaped = mysqli_real_escape_string($conn, $source_system);
 
 // Check if email is being changed and if new email already exists
 $current_user_query = "SELECT email FROM USER WHERE user_id = '$user_id_escaped'";
@@ -79,14 +93,17 @@ $update_query = "UPDATE USER SET
     email = '$email_escaped',
     role = '$role_escaped',
     city = '$city_escaped',
+    barangay = '$barangay_escaped',
     cp_number = '$cp_number_escaped',
-    acc_status = '$acc_status_escaped'
+    acc_status = '$acc_status_escaped',
+    source_system = '$source_system_escaped'
     WHERE user_id = '$user_id_escaped'";
 
 if (executeQuery($update_query)) {
     echo json_encode(['success' => true, 'message' => 'User updated successfully']);
 } else {
-    echo json_encode(['success' => false, 'error' => 'Failed to update user']);
+    $error_message = mysqli_error($conn);
+    echo json_encode(['success' => false, 'error' => 'Failed to update user: ' . $error_message]);
 }
 
 $conn->close();

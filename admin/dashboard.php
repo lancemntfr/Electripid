@@ -16,7 +16,7 @@ if ($page === 'users') {
     ))['total'];
 
     $users = executeQuery("
-        SELECT user_id, fname, lname, email, role, city, cp_number, acc_status, source_system, created_at
+        SELECT user_id, fname, lname, email, role, city, barangay, cp_number, acc_status, source_system, created_at
         FROM USER
         ORDER BY created_at DESC
     ");
@@ -812,6 +812,7 @@ body {
             data-role="<?= htmlspecialchars(strtolower($u['role'])) ?>"
             data-source="<?= htmlspecialchars(strtolower($u['source_system'])) ?>"
             data-city="<?= htmlspecialchars(strtolower($u['city'])) ?>"
+            data-barangay="<?= htmlspecialchars(strtolower($u['barangay'] ?? '')) ?>"
             data-status="<?= htmlspecialchars(strtolower($u['acc_status'])) ?>"
             data-date="<?= strtotime($u['created_at']) ?>">
           <td class="text-center"><strong>#<?= $u['user_id'] ?></strong></td>
@@ -845,8 +846,10 @@ body {
                     data-email="<?= htmlspecialchars($u['email']) ?>"
                     data-role="<?= htmlspecialchars($u['role']) ?>"
                     data-city="<?= htmlspecialchars($u['city']) ?>"
+                    data-barangay="<?= htmlspecialchars($u['barangay'] ?? '') ?>"
                     data-contact="<?= htmlspecialchars($u['cp_number']) ?>"
                     data-status="<?= htmlspecialchars($u['acc_status']) ?>"
+                    data-source="<?= htmlspecialchars($u['source_system']) ?>"
                     data-name="<?= htmlspecialchars($u['fname'].' '.$u['lname']) ?>"
                     title="Edit User">
               <i class="bi-three-dots-vertical"></i>
@@ -979,7 +982,14 @@ body {
             </label>
             <input type="email" class="form-control form-control-sm mb-2" id="editEmail" name="email" placeholder="Email Address" required>
             <input type="text" class="form-control form-control-sm mb-2" id="editContact" name="cp_number" placeholder="Contact Number">
-            <input type="text" class="form-control form-control-sm" id="editCity" name="city" placeholder="City" required>
+            <div class="row g-2">
+              <div class="col-6">
+                <input type="text" class="form-control form-control-sm" id="editCity" name="city" placeholder="City" required>
+              </div>
+              <div class="col-6">
+                <input type="text" class="form-control form-control-sm" id="editBarangay" name="barangay" placeholder="Barangay">
+              </div>
+            </div>
           </div>
 
           <!-- Account Settings -->
@@ -991,12 +1001,15 @@ body {
               <option value="user">User</option>
               <option value="admin">Admin</option>
             </select>
-            <select class="form-select form-select-sm" id="editStatus" name="acc_status" required>
+            <select class="form-select form-select-sm mb-2" id="editStatus" name="acc_status" required>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
               <option value="suspended">Suspended</option>
             </select>
-            <input type="text" class="form-control form-control-sm mt-2" id="editSourceSystem" placeholder="Source system" readonly>
+            <select class="form-select form-select-sm" id="editSourceSystem" name="source_system" required>
+              <option value="Electripid">Electripid</option>
+              <option value="Airlyft">Airlyft</option>
+            </select>
           </div>
 
           <!-- Alert Container -->
@@ -1115,11 +1128,14 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('editEmail').value = this.getAttribute('data-email');
       document.getElementById('editRole').value = this.getAttribute('data-role');
       document.getElementById('editCity').value = this.getAttribute('data-city');
+      document.getElementById('editBarangay').value = this.getAttribute('data-barangay') || '';
       document.getElementById('editContact').value = this.getAttribute('data-contact');
       document.getElementById('editStatus').value = this.getAttribute('data-status');
-      const srcRaw = (this.getAttribute('data-source') || '').toLowerCase();
-      const srcLabel = srcRaw ? srcRaw.charAt(0).toUpperCase() + srcRaw.slice(1) : '';
-      document.getElementById('editSourceSystem').value = srcLabel;
+      const sourceSystem = this.getAttribute('data-source');
+      if (sourceSystem) {
+        const sourceValue = sourceSystem.charAt(0).toUpperCase() + sourceSystem.slice(1);
+        document.getElementById('editSourceSystem').value = sourceValue;
+      }
       document.getElementById('editUserAlert').innerHTML = '';
       editModal.show();
     });
@@ -1142,6 +1158,10 @@ document.addEventListener('DOMContentLoaded', function() {
         body: formData
       });
       
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const result = await response.json();
       
       if (result.success) {
@@ -1155,7 +1175,8 @@ document.addEventListener('DOMContentLoaded', function() {
         submitBtn.innerHTML = originalText;
       }
     } catch (error) {
-      alertDiv.innerHTML = '<div class="alert alert-danger">An error occurred. Please try again.</div>';
+      console.error('Error:', error);
+      alertDiv.innerHTML = `<div class="alert alert-danger">An error occurred: ${error.message}. Please check the console for details.</div>`;
       submitBtn.disabled = false;
       submitBtn.innerHTML = originalText;
     }
