@@ -188,12 +188,12 @@
             
             <div class="code-input-container">
                 <div class="code-input-group">
-                    <input type="text" class="code-input-box" maxlength="1" pattern="[0-9]" inputmode="numeric" id="code1" autocomplete="off">
-                    <input type="text" class="code-input-box" maxlength="1" pattern="[0-9]" inputmode="numeric" id="code2" autocomplete="off">
-                    <input type="text" class="code-input-box" maxlength="1" pattern="[0-9]" inputmode="numeric" id="code3" autocomplete="off">
-                    <input type="text" class="code-input-box" maxlength="1" pattern="[0-9]" inputmode="numeric" id="code4" autocomplete="off">
-                    <input type="text" class="code-input-box" maxlength="1" pattern="[0-9]" inputmode="numeric" id="code5" autocomplete="off">
-                    <input type="text" class="code-input-box" maxlength="1" pattern="[0-9]" inputmode="numeric" id="code6" autocomplete="off">
+                    <input type="text" class="code-input-box" maxlength="1" pattern="[0-9]" inputmode="numeric" id="code1" autocomplete="off" required>
+                    <input type="text" class="code-input-box" maxlength="1" pattern="[0-9]" inputmode="numeric" id="code2" autocomplete="off" required>
+                    <input type="text" class="code-input-box" maxlength="1" pattern="[0-9]" inputmode="numeric" id="code3" autocomplete="off" required>
+                    <input type="text" class="code-input-box" maxlength="1" pattern="[0-9]" inputmode="numeric" id="code4" autocomplete="off" required>
+                    <input type="text" class="code-input-box" maxlength="1" pattern="[0-9]" inputmode="numeric" id="code5" autocomplete="off" required>
+                    <input type="text" class="code-input-box" maxlength="1" pattern="[0-9]" inputmode="numeric" id="code6" autocomplete="off" required>
                 </div>
             </div>
             
@@ -205,6 +205,11 @@
         </form>
         
         <p class="text-center text-muted small mt-3 mb-0" style="font-size: 0.75rem;">Electripid admin will never ask for your own 6 digit code</p>
+        <p class="text-center mt-3 mb-0">
+            <a href="../../register.php" class="text-decoration-none">
+                <i class="bi bi-arrow-left me-1"></i> Back
+            </a>
+        </p>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -277,12 +282,24 @@
                 
                 if (fullCode.length !== 6) {
                     e.preventDefault();
-                    alert('Please enter the complete 6-digit code.');
+                    // Set custom validation message on first input
+                    inputElements[0].setCustomValidity('Please enter the complete 6-digit code.');
+                    inputElements[0].reportValidity();
                     inputElements[0].focus();
                     return false;
+                } else {
+                    // Clear any custom validity
+                    inputElements.forEach(input => input.setCustomValidity(''));
                 }
                 
                 document.getElementById('fullCode').value = fullCode;
+            });
+            
+            // Clear custom validity when user starts typing
+            inputElements.forEach(input => {
+                input.addEventListener('input', function() {
+                    this.setCustomValidity('');
+                });
             });
         });
     </script>

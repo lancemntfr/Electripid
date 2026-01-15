@@ -60,7 +60,12 @@
     
     // Check phone verification status
     $phone_verified_status = false;
+    $original_phone_digits = '';
     if (!empty($user['cp_number'])) {
+        // Normalize phone to last 10 digits for comparison
+        $digits_only = preg_replace('/\D/', '', $user['cp_number']);
+        $original_phone_digits = substr($digits_only, -10);
+
         $phone_verification_check = $conn->prepare("SELECT verification_id FROM VERIFICATION WHERE user_id=? AND verification_type='sms' AND is_verified=1 LIMIT 1");
         $phone_verification_check->bind_param("i", $user_id);
         $phone_verification_check->execute();
@@ -525,9 +530,10 @@
                                 <span class="input-group-text">+63</span>
                                 <input type="text" class="form-control" id="contactsPhoneInput" 
                                        placeholder="<?= empty($user['cp_number']) ? 'add contact number' : '912 345 6789' ?>" maxlength="13" 
-                                       pattern="[0-9\s]{10,13}" value="<?= !empty($user['cp_number']) ? htmlspecialchars(str_replace('+63', '', $user['cp_number']), ENT_QUOTES) : '' ?>">
+                                       pattern="[0-9\s]{10,13}" value="<?= !empty($user['cp_number']) ? htmlspecialchars(str_replace('+63', '', $user['cp_number']), ENT_QUOTES) : '' ?>"
+                                       oninput="checkPhoneChanged()">
                             </div>
-                            <span class="text-<?= !empty($user['cp_number']) ? ($phone_verified_status ? 'success' : 'danger') : 'secondary' ?> small" style="min-width: 90px; text-align: right;">
+                            <span id="phoneStatusText" class="text-<?= !empty($user['cp_number']) ? ($phone_verified_status ? 'success' : 'danger') : 'secondary' ?> small" style="min-width: 90px; text-align: right;">
                                 <?php if (empty($user['cp_number'])): ?>
                                     add contact number
                                 <?php else: ?>
@@ -535,11 +541,11 @@
                                 <?php endif; ?>
                             </span>
                         </div>
-                        <?php if (!empty($user['cp_number']) && !$phone_verified_status): ?>
+                        <div id="phoneVerifyLinkModal" style="<?= (!empty($user['cp_number']) && !$phone_verified_status) ? '' : 'display:none;' ?>">
                             <small class="text-danger">
                                 <a href="#" class="text-decoration-none" onclick="event.preventDefault(); bootstrap.Modal.getInstance(document.getElementById('contactsModal')).hide(); openPhoneModal();">Click here to verify phone</a>
                             </small>
-                        <?php endif; ?>
+                        </div>
                     </div>
                     <div id="contactsAlert"></div>
                 </div>
@@ -1007,7 +1013,10 @@
         }
 
         let originalEmail = '<?= htmlspecialchars($user['email'], ENT_QUOTES) ?>';
-        
+        let originalPhoneDigits = '<?= $original_phone_digits ?>';
+        const hasInitialPhone = <?= !empty($user['cp_number']) ? 'true' : 'false' ?>;
+        const phoneInitiallyVerified = <?= $phone_verified_status ? 'true' : 'false' ?>;
+
         function checkEmailChanged() {
             const emailInput = document.getElementById('contactsEmailInput');
             const emailStatusText = document.getElementById('emailStatusText');
@@ -1026,6 +1035,43 @@
                 emailStatusText.style.minWidth = '90px';
                 emailStatusText.style.textAlign = 'right';
                 emailVerifyLink.style.display = 'none';
+            }
+        }
+
+        function checkPhoneChanged() {
+            const phoneInput = document.getElementById('contactsPhoneInput');
+            const phoneStatusText = document.getElementById('phoneStatusText');
+            const phoneVerifyLinkModal = document.getElementById('phoneVerifyLinkModal');
+            const digits = phoneInput.value.trim().replace(/\s/g, '');
+
+            if (digits && digits !== originalPhoneDigits) {
+                // Phone has changed and is non-empty → mark as not verified and show link
+                phoneStatusText.textContent = 'Not verified';
+                phoneStatusText.className = 'text-danger small';
+                phoneStatusText.style.minWidth = '90px';
+                phoneStatusText.style.textAlign = 'right';
+                if (phoneVerifyLinkModal) {
+                    phoneVerifyLinkModal.style.display = 'block';
+                }
+            } else {
+                // Revert to original state
+                if (!hasInitialPhone) {
+                    phoneStatusText.textContent = 'add contact number';
+                    phoneStatusText.className = 'text-secondary small';
+                    phoneStatusText.style.minWidth = '90px';
+                    phoneStatusText.style.textAlign = 'right';
+                    if (phoneVerifyLinkModal) {
+                        phoneVerifyLinkModal.style.display = 'none';
+                    }
+                } else {
+                    phoneStatusText.textContent = phoneInitiallyVerified ? 'Verified' : 'Not verified';
+                    phoneStatusText.className = 'text-' + (phoneInitiallyVerified ? 'success' : 'danger') + ' small';
+                    phoneStatusText.style.minWidth = '90px';
+                    phoneStatusText.style.textAlign = 'right';
+                    if (phoneVerifyLinkModal) {
+                        phoneVerifyLinkModal.style.display = phoneInitiallyVerified ? 'none' : 'block';
+                    }
+                }
             }
         }
 
