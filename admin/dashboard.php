@@ -16,7 +16,7 @@ if ($page === 'users') {
     ))['total'];
 
     $users = executeQuery("
-        SELECT user_id, fname, lname, email, role, city, cp_number, acc_status, created_at
+        SELECT user_id, fname, lname, email, role, city, cp_number, acc_status, source_system, created_at
         FROM USER
         ORDER BY created_at DESC
     ");
@@ -206,8 +206,37 @@ body {
     margin-bottom: 0;
 }
 
+/* Scrollable table container */
+.table-responsive-scrollable {
+    max-height: 600px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(30, 136, 229, 0.5) rgba(0, 0, 0, 0.1);
+}
+
+.table-responsive-scrollable::-webkit-scrollbar {
+    width: 8px;
+}
+
+.table-responsive-scrollable::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+}
+
+.table-responsive-scrollable::-webkit-scrollbar-thumb {
+    background: rgba(30, 136, 229, 0.5);
+    border-radius: 4px;
+}
+
+.table-responsive-scrollable::-webkit-scrollbar-thumb:hover {
+    background: rgba(30, 136, 229, 0.7);
+}
+
 .table thead {
     background-color: #f8f9fa;
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 .table thead th {
@@ -232,6 +261,7 @@ body {
     padding: 1rem;
     vertical-align: middle;
     border-bottom: 1px solid #f1f3f5;
+    text-align: center;
 }
 
 /* Badge Styles - Match User Dashboard */
@@ -263,6 +293,31 @@ body {
 .badge.bg-danger {
     background: #dc3545 !important;
     color: white;
+}
+
+/* Role Badge Styles - Enhanced Design */
+.badge-role-admin {
+    background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%) !important;
+    color: white;
+    box-shadow: 0 2px 4px rgba(124, 58, 237, 0.3);
+    transition: all 0.3s ease;
+}
+
+.badge-role-admin:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(124, 58, 237, 0.4);
+}
+
+.badge-role-user {
+    background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%) !important;
+    color: white;
+    box-shadow: 0 2px 4px rgba(30, 136, 229, 0.3);
+    transition: all 0.3s ease;
+}
+
+.badge-role-user:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(30, 136, 229, 0.4);
 }
 
 /* Button Styles - Match User Dashboard */
@@ -352,16 +407,16 @@ body {
 }
 
 .change-btn.btn-outline-primary {
-    border-color: #1E88E5;
-    color: #1E88E5;
+    border-color: #6c757d;
+    color: #6c757d;
     background: white;
 }
 
 .change-btn.btn-outline-primary:hover {
-    background: #1E88E5;
+    background: #6c757d;
     color: white;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(30, 136, 229, 0.3);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
 }
 
 .change-btn.btn-outline-danger {
@@ -727,24 +782,24 @@ body {
 
 <div class="chart-container h-100 d-flex flex-column">
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="mb-0"><i class="bi bi-search me-2"></i>Search Users</h5>
     <div class="d-flex gap-2">
       <input type="text" id="searchUsers" class="form-control" style="width:250px" placeholder="🔍 Search users...">
     </div>
   </div>
 
-  <div class="table-responsive">
+  <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
     <table class="table table-hover align-middle" id="usersTable">
       <thead class="table-light">
         <tr>
-          <th>ID</th>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Role</th>
-          <th>City</th>
-          <th>Contact</th>
-          <th>Status</th>
-          <th>Registered</th>
+          <th class="text-center">ID</th>
+          <th class="text-center">Name</th>
+          <th class="text-center">Email</th>
+          <th class="text-center">Role</th>
+          <th class="text-center">Source</th>
+          <th class="text-center">City</th>
+          <th class="text-center">Contact</th>
+          <th class="text-center">Status</th>
+          <th class="text-center">Registered</th>
           <th class="text-center">Actions</th>
         </tr>
       </thead>
@@ -755,31 +810,32 @@ body {
             data-name="<?= htmlspecialchars(strtolower($u['fname'].' '.$u['lname'])) ?>"
             data-email="<?= htmlspecialchars(strtolower($u['email'])) ?>"
             data-role="<?= htmlspecialchars(strtolower($u['role'])) ?>"
+            data-source="<?= htmlspecialchars(strtolower($u['source_system'])) ?>"
             data-city="<?= htmlspecialchars(strtolower($u['city'])) ?>"
             data-status="<?= htmlspecialchars(strtolower($u['acc_status'])) ?>"
             data-date="<?= strtotime($u['created_at']) ?>">
-          <td><strong>#<?= $u['user_id'] ?></strong></td>
-          <td>
+          <td class="text-center"><strong>#<?= $u['user_id'] ?></strong></td>
+          <td class="text-center">
             <div>
               <strong><?= htmlspecialchars($u['fname'].' '.$u['lname']) ?></strong>
             </div>
           </td>
-          <td><?= htmlspecialchars($u['email']) ?></td>
-          <td>
-            <span class="badge bg-<?= $u['role']=='admin'?'danger':'primary' ?>">
-              <i class="bi bi-<?= $u['role']=='admin'?'shield-check':'person' ?>"></i>
+          <td class="text-center"><?= htmlspecialchars($u['email']) ?></td>
+          <td class="text-center">
+            <span class="badge badge-role-<?= $u['role'] ?>">
               <?= ucfirst($u['role']) ?>
             </span>
           </td>
-          <td><?= htmlspecialchars($u['city']) ?></td>
-          <td><?= htmlspecialchars($u['cp_number']) ?></td>
-          <td>
+          <td class="text-center"><?= htmlspecialchars($u['source_system']) ?></td>
+          <td class="text-center"><?= htmlspecialchars($u['city']) ?></td>
+          <td class="text-center"><?= htmlspecialchars($u['cp_number']) ?></td>
+          <td class="text-center">
             <span class="badge bg-<?= $u['acc_status']=='active'?'success':'secondary' ?>">
               <i class="bi bi-<?= $u['acc_status']=='active'?'check-circle':'x-circle' ?>"></i>
               <?= ucfirst($u['acc_status']) ?>
             </span>
           </td>
-          <td><small><?= date('M d, Y', strtotime($u['created_at'])) ?></small></td>
+          <td class="text-center"><small><?= date('M d, Y', strtotime($u['created_at'])) ?></small></td>
           <td class="text-center">
             <button type="button" 
                     class="btn btn-outline-primary change-btn edit-user-btn" 
@@ -852,29 +908,29 @@ body {
 <div class="chart-container h-100 d-flex flex-column">
   <h5 class="mb-3"><i class="bi bi-list-ul me-2"></i>List of Donors</h5>
 
-  <div class="table-responsive">
+  <div class="table-responsive table-responsive-scrollable">
     <table class="table table-hover align-middle">
       <thead class="table-light">
         <tr>
-          <th>Transaction ID</th>
-          <th>Donor Name</th>
-          <th>Amount</th>
-          <th>Date</th>
+          <th class="text-center">Transaction ID</th>
+          <th class="text-center">Donor Name</th>
+          <th class="text-center">Amount</th>
+          <th class="text-center">Date</th>
         </tr>
       </thead>
       <tbody>
 
       <?php while($d=mysqli_fetch_assoc($donations)): ?>
         <tr>
-          <td><strong>#<?= $d['donation_id'] ?></strong></td>
-          <td>
+          <td class="text-center"><strong>#<?= $d['donation_id'] ?></strong></td>
+          <td class="text-center">
             <i class="bi bi-person-circle me-2 text-primary"></i>
             <?= htmlspecialchars($d['donor_name']) ?>
           </td>
-          <td>
+          <td class="text-center">
             <strong class="text-success">₱<?= number_format($d['amount'],2) ?></strong>
           </td>
-          <td><small><?= date('M d, Y - g:i A', strtotime($d['donation_date'])) ?></small></td>
+          <td class="text-center"><small><?= date('M d, Y - g:i A', strtotime($d['donation_date'])) ?></small></td>
         </tr>
       <?php endwhile; ?>
 
@@ -940,6 +996,7 @@ body {
               <option value="inactive">Inactive</option>
               <option value="suspended">Suspended</option>
             </select>
+            <input type="text" class="form-control form-control-sm mt-2" id="editSourceSystem" placeholder="Source system" readonly>
           </div>
 
           <!-- Alert Container -->
@@ -948,7 +1005,7 @@ body {
 
         <div class="modal-footer bg-light border-0 py-2 d-flex justify-content-between">
           <button type="button" class="btn btn-danger btn-sm" id="deleteUserBtn">
-            <i class="bi bi-trash me-1"></i>Delete User
+            <i class="bi bi-trash me-1"></i>Delete 
           </button>
           <div>
             <button type="button" class="btn btn-secondary btn-sm me-1" data-bs-dismiss="modal">
@@ -1016,6 +1073,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const name = row.getAttribute('data-name') || '';
       const email = row.getAttribute('data-email') || '';
       const role = row.getAttribute('data-role') || '';
+      const source = row.getAttribute('data-source') || '';
       const city = row.getAttribute('data-city') || '';
       const status = row.getAttribute('data-status') || '';
       const userId = row.getAttribute('data-user-id') || '';
@@ -1023,6 +1081,7 @@ document.addEventListener('DOMContentLoaded', function() {
       return name.includes(searchTerm) || 
              email.includes(searchTerm) ||
              role.includes(searchTerm) ||
+             source.includes(searchTerm) ||
              city.includes(searchTerm) || 
              status.includes(searchTerm) ||
              userId.includes(searchTerm);
@@ -1058,6 +1117,9 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('editCity').value = this.getAttribute('data-city');
       document.getElementById('editContact').value = this.getAttribute('data-contact');
       document.getElementById('editStatus').value = this.getAttribute('data-status');
+      const srcRaw = (this.getAttribute('data-source') || '').toLowerCase();
+      const srcLabel = srcRaw ? srcRaw.charAt(0).toUpperCase() + srcRaw.slice(1) : '';
+      document.getElementById('editSourceSystem').value = srcLabel;
       document.getElementById('editUserAlert').innerHTML = '';
       editModal.show();
     });
