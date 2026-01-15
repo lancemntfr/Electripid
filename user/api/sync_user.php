@@ -36,20 +36,32 @@
     $source_escaped = mysqli_real_escape_string($conn, $source);
 
     // Check if user exists
-    $check_query = "SELECT user_id FROM USER WHERE email='$email_escaped'";
+    $check_query = "SELECT user_id FROM USER WHERE LOWER(email)=LOWER('$email_escaped')";
     $check_result = executeQuery($check_query);
 
     if ($check_result && mysqli_num_rows($check_result) > 0) {
         // Update existing user
         $update_query = "UPDATE USER SET fname='$fname_escaped', lname='$lname_escaped', cp_number='$phone_escaped', password='$pass_escaped', source_system='$source_escaped' WHERE email='$email_escaped'";
-        executeQuery($update_query);
+        $update_result = executeQuery($update_query);
 
-        echo json_encode(['success' => true, 'message' => 'User updated']);
+        if ($update_result) {
+            echo json_encode(['success' => true, 'message' => 'User updated']);
+        } else {
+            error_log("Update failed: " . mysqli_error($conn));
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Database update failed']);
+        }
     } else {
         // Create new user
-        $insert_query = "INSERT INTO USER (fname, lname, email, cp_number, password, source_system, role) VALUES ('$fname_escaped', '$lname_escaped', '$email_escaped', '$phone_escaped', '$pass_escaped', '$source_escaped', 'user')";
-        executeQuery($insert_query);
+        $insert_query = "INSERT INTO USER (fname, lname, email, cp_number, password, source_system, role) VALUES ('$fname_escaped', '$lname_escaped', '$email_escaped', '$phone_escaped', '$pass_escaped', '$source_escaped', 'Client')";
+        $insert_result = executeQuery($insert_query);
 
-        echo json_encode(['success' => true, 'message' => 'User created']);
+        if ($insert_result) {
+            echo json_encode(['success' => true, 'message' => 'User created']);
+        } else {
+            error_log("Insert failed: " . mysqli_error($conn));
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Database insert failed']);
+        }
     }
 ?>"

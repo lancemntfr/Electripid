@@ -40,7 +40,10 @@ function syncUserToAirlyft($user_id) {
 
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
     curl_close($ch);
+
+    error_log("Sync to Airlyft - HTTP Code: $httpCode, Response: $response, Error: $curlError");
 
     return $httpCode === 200;
 }
