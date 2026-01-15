@@ -217,7 +217,7 @@ if ($household_result && $household_result->num_rows > 0) {
     <div class="row g-4 mb-4">
       <div class="col-lg-9">
         <div class="chart-container">
-          <h5 class="mb-3"><i class="bi bi-list-check me-2"></i>Appliances</h5>
+          <h5 class="mb-3"><i class="bi bi-list-check me-2"></i>Appliances <span class="badge bg-primary ms-2" id="activeApplianceCount">0</span></h5>
 
           <div class="row g-3">
             <div class="col-lg-4">
@@ -243,10 +243,6 @@ if ($household_result && $household_result->num_rows > 0) {
             </div>
 
             <div class="col-lg-8 d-flex flex-column">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="fw-semibold">Active Appliances</span>
-                <span class="badge bg-primary" id="activeApplianceCount">0</span>
-              </div>
               <div id="applianceDisplayList" class="flex-grow-1" style="max-height: 280px; overflow-y: auto;">
                 <div class="text-center text-muted small py-3">
                   No appliances tracked yet. Add one to get started!

@@ -1,0 +1,17 @@
+[2026-01-15 13:10:50] === PayPal Request Started ===
+[2026-01-15 13:10:50] Request URI: /Electripid/paypal/paypal.php?action=create
+[2026-01-15 13:10:50] Request Method: POST
+[2026-01-15 13:10:50] config.php loaded
+[2026-01-15 20:10:50] connect.php loaded
+[2026-01-15 20:10:50] Action: create
+[2026-01-15 20:10:50] Raw Input: {"amount":"58.73"}
+[2026-01-15 20:10:50] Decoded Input: {"amount":"58.73"}
+[2026-01-15 20:10:50] CREATE ORDER action
+[2026-01-15 20:10:50] Amount received: 58.73
+[2026-01-15 20:10:50] Getting PayPal access token...
+[2026-01-15 20:10:55] Access token obtained: A21AAKCzd6imTznv-vjl...
+[2026-01-15 20:10:55] Order data: {"intent":"CAPTURE","purchase_units":[{"amount":{"currency_code":"USD","value":"58.73"},"description":"Donation to Electripid"}],"application_context":{"brand_name":"Electripid","shipping_preference":"NO_SHIPPING"}}
+[2026-01-15 20:11:00] HTTP Code: 201
+[2026-01-15 20:11:00] cURL Error: 
+[2026-01-15 20:11:00] Response: {"id":"0KT71893YD446681A","status":"CREATED","links":[{"href":"https://api.sandbox.paypal.com/v2/checkout/orders/0KT71893YD446681A","rel":"self","method":"GET"},{"href":"https://www.sandbox.paypal.com/checkoutnow?token=0KT71893YD446681A","rel":"approve","method":"GET"},{"href":"https://api.sandbox.paypal.com/v2/checkout/orders/0KT71893YD446681A","rel":"update","method":"PATCH"},{"href":"https://api.sandbox.paypal.com/v2/checkout/orders/0KT71893YD446681A/capture","rel":"capture","method":"POST"}]}
+[2026-01-15 20:11:00] Order created successfully: 0KT71893YD446681A
