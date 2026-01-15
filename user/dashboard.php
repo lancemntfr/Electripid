@@ -266,6 +266,19 @@ if ($household_result && $household_result->num_rows > 0) {
               <div class="small text-secondary mb-1">Monthly Cost</div>
               <div class="h4 mb-0">₱<span id="monthlyCost">0</span></div>
             </div>
+            <div class="mb-3">
+              <div class="small text-secondary mb-1">Budget Status</div>
+              <div id="budgetStatus" class="d-flex align-items-center gap-2">
+                <span class="badge" id="budgetStatusBadge">--</span>
+                <span class="small text-muted" id="budgetStatusText">--</span>
+              </div>
+              <div id="budgetStatusNote" class="mt-2">
+                <small class="text-muted d-block" style="font-size: 0.75rem;">
+                  <i class="bi bi-info-circle me-1"></i>
+                  <em>This shows if your predicted monthly cost exceeds your set budget. If you exceed your budget, consider reducing appliance usage or adjusting your budget in Settings.</em>
+                </small>
+              </div>
+            </div>
           </div>
         </div>
       </div>
