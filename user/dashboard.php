@@ -217,25 +217,25 @@ if ($household_result && $household_result->num_rows > 0) {
     <div class="row g-4 mb-4">
       <div class="col-lg-9">
         <div class="chart-container">
-          <h5 class="mb-3"><i class="bi bi-list-check me-2"></i>Appliances <span class="badge bg-primary ms-2" id="activeApplianceCount">0</span></h5>
+          <h5 class="mb-3"><i class="bi bi-list-check me-2"></i>Appliances <span class="badge bg-primary ms-2" id="activeApplianceCount" style="font-size: 0.65rem; padding: 0.2rem 0.4rem;">0</span></h5>
 
           <div class="row g-3">
             <div class="col-lg-4">
               <div class="mb-2">
                 <label class="form-label small text-muted mb-1">Device Name</label>
-                <input type="text" id="deviceName" class="form-control form-control-sm" placeholder="e.g. Aircon">
+                <input type="text" id="deviceName" class="form-control form-control-sm" placeholder="e.g. Aircon" required>
               </div>
               <div class="mb-2">
                 <label class="form-label small text-muted mb-1">Power (Watts)</label>
-                <input type="number" id="devicePower" class="form-control form-control-sm" placeholder="e.g. 1200">
+                <input type="number" id="devicePower" class="form-control form-control-sm" placeholder="e.g. 1200" required>
               </div>
               <div class="mb-2">
                 <label class="form-label small text-muted mb-1">Hours per Day</label>
-                <input type="number" id="deviceHours" class="form-control form-control-sm" placeholder="e.g. 8">
+                <input type="number" id="deviceHours" class="form-control form-control-sm" placeholder="e.g. 8" max="24" required oninput="validateHoursPerDay(this)">
               </div>
               <div class="mb-3">
                 <label class="form-label small text-muted mb-1">Usage per Week (Days)</label>
-                <input type="number" id="deviceUsagePerWeek" class="form-control form-control-sm" placeholder="e.g. 5">
+                <input type="number" id="deviceUsagePerWeek" class="form-control form-control-sm" placeholder="e.g. 5" max="7" required oninput="validateUsagePerWeek(this)">
               </div>
               <button class="btn btn-primary btn-sm w-100" onclick="addAppliance()">
                 <i class="bi bi-plus-circle me-1"></i>Add Appliance
@@ -295,19 +295,19 @@ if ($household_result && $household_result->num_rows > 0) {
           <div class="modal-body">
             <div class="mb-3">
               <label class="form-label small text-muted">Device Name</label>
-              <input type="text" id="editDeviceName" class="form-control" placeholder="e.g. Aircon">
+              <input type="text" id="editDeviceName" class="form-control" placeholder="e.g. Aircon" required>
             </div>
             <div class="mb-3">
               <label class="form-label small text-muted">Power (Watts)</label>
-              <input type="number" id="editDevicePower" class="form-control" placeholder="e.g. 1200">
+              <input type="number" id="editDevicePower" class="form-control" placeholder="e.g. 1200" required>
             </div>
             <div class="mb-3">
               <label class="form-label small text-muted">Hours per Day</label>
-              <input type="number" id="editDeviceHours" class="form-control" placeholder="e.g. 8">
+              <input type="number" id="editDeviceHours" class="form-control" placeholder="e.g. 8" max="24" required oninput="validateEditHoursPerDay(this)">
             </div>
             <div class="mb-3">
               <label class="form-label small text-muted">Usage per Week (Days)</label>
-              <input type="number" id="editDeviceUsagePerWeek" class="form-control" placeholder="e.g. 5">
+              <input type="number" id="editDeviceUsagePerWeek" class="form-control" placeholder="e.g. 5" max="7" required oninput="validateEditUsagePerWeek(this)">
             </div>
           </div>
           <div class="modal-footer">
@@ -553,6 +553,40 @@ if ($household_result && $household_result->num_rows > 0) {
 }
 
 #customAmount[type=number] {
+  -moz-appearance: textfield;
+}
+
+.form-error-container {
+  border: 2px solid #f8d7da;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 15px;
+  background: #fff5f5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #842029;
+  font-size: 0.9rem;
+}
+
+
+/* Remove number input spinners */
+#deviceHours::-webkit-outer-spin-button,
+#deviceHours::-webkit-inner-spin-button,
+#deviceUsagePerWeek::-webkit-outer-spin-button,
+#deviceUsagePerWeek::-webkit-inner-spin-button,
+#editDeviceHours::-webkit-outer-spin-button,
+#editDeviceHours::-webkit-inner-spin-button,
+#editDeviceUsagePerWeek::-webkit-outer-spin-button,
+#editDeviceUsagePerWeek::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+#deviceHours[type=number],
+#deviceUsagePerWeek[type=number],
+#editDeviceHours[type=number],
+#editDeviceUsagePerWeek[type=number] {
   -moz-appearance: textfield;
 }
 </style>

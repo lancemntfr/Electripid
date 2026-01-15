@@ -1,6 +1,79 @@
 // Appliance management functionality
 let currentEditingApplianceId = null;
 let editApplianceModalInstance = null;
+
+// Validation functions using native HTML5 validation
+function validateHoursPerDay(input) {
+  const value = parseFloat(input.value);
+  
+  if (input.value === '') {
+    input.setCustomValidity('');
+    return true;
+  }
+  
+  if (value > 24) {
+    input.setCustomValidity('You cannot input hours that exceed to 24');
+    input.reportValidity();
+    return false;
+  } else {
+    input.setCustomValidity('');
+    return true;
+  }
+}
+
+function validateUsagePerWeek(input) {
+  const value = parseFloat(input.value);
+  
+  if (input.value === '') {
+    input.setCustomValidity('');
+    return true;
+  }
+  
+  if (value > 7) {
+    input.setCustomValidity('You cannot input usage that exceed 7 per week');
+    input.reportValidity();
+    return false;
+  } else {
+    input.setCustomValidity('');
+    return true;
+  }
+}
+
+function validateEditHoursPerDay(input) {
+  const value = parseFloat(input.value);
+  
+  if (input.value === '') {
+    input.setCustomValidity('');
+    return true;
+  }
+  
+  if (value > 24) {
+    input.setCustomValidity('You cannot input hours that exceed to 24');
+    input.reportValidity();
+    return false;
+  } else {
+    input.setCustomValidity('');
+    return true;
+  }
+}
+
+function validateEditUsagePerWeek(input) {
+  const value = parseFloat(input.value);
+  
+  if (input.value === '') {
+    input.setCustomValidity('');
+    return true;
+  }
+  
+  if (value > 7) {
+    input.setCustomValidity('You cannot input usage that exceed 7 per week');
+    input.reportValidity();
+    return false;
+  } else {
+    input.setCustomValidity('');
+    return true;
+  }
+}
 function loadAppliances() {
   // Process appliance data (calculate monthly usage, normalize names)
   appliances = appliances.map(app => {
@@ -32,13 +105,58 @@ async function refreshAppliances() {
 }
 
 async function addAppliance() {
-  const name = document.getElementById('deviceName').value.trim();
-  const power = parseFloat(document.getElementById('devicePower').value);
-  const hours = parseFloat(document.getElementById('deviceHours').value);
-  const usagePerWeek = parseFloat(document.getElementById('deviceUsagePerWeek').value);
+  const nameInput = document.getElementById('deviceName');
+  const powerInput = document.getElementById('devicePower');
+  const hoursInput = document.getElementById('deviceHours');
+  const usageInput = document.getElementById('deviceUsagePerWeek');
 
-  if (!name || !power || !hours || !usagePerWeek) {
-    alert('Please fill in all fields');
+  const name = nameInput.value.trim();
+  const power = parseFloat(powerInput.value);
+  const hours = parseFloat(hoursInput.value);
+  const usagePerWeek = parseFloat(usageInput.value);
+
+  // Use native HTML5 validation
+  if (!name) {
+    nameInput.setCustomValidity('Please fill in all fields');
+    nameInput.reportValidity();
+    return;
+  }
+  nameInput.setCustomValidity('');
+
+  if (!power || isNaN(power)) {
+    powerInput.setCustomValidity('Please fill in all fields');
+    powerInput.reportValidity();
+    return;
+  }
+  powerInput.setCustomValidity('');
+
+  if (!hours || isNaN(hours)) {
+    hoursInput.setCustomValidity('Please fill in all fields');
+    hoursInput.reportValidity();
+    return;
+  }
+  hoursInput.setCustomValidity('');
+
+  if (!usagePerWeek || isNaN(usagePerWeek)) {
+    usageInput.setCustomValidity('Please fill in all fields');
+    usageInput.reportValidity();
+    return;
+  }
+  usageInput.setCustomValidity('');
+
+  // Validate hours per day
+  if (hours > 24) {
+    const hoursInput = document.getElementById('deviceHours');
+    validateHoursPerDay(hoursInput);
+    hoursInput.focus();
+    return;
+  }
+
+  // Validate usage per week
+  if (usagePerWeek > 7) {
+    const usageInput = document.getElementById('deviceUsagePerWeek');
+    validateUsagePerWeek(usageInput);
+    usageInput.focus();
     return;
   }
 
@@ -59,10 +177,16 @@ async function addAppliance() {
 
   if (result.success) {
     // Clear form and refresh appliances
-    document.getElementById('deviceName').value = '';
-    document.getElementById('devicePower').value = '';
-    document.getElementById('deviceHours').value = '';
-    document.getElementById('deviceUsagePerWeek').value = '';
+    nameInput.value = '';
+    powerInput.value = '';
+    hoursInput.value = '';
+    usageInput.value = '';
+    
+    // Clear validation messages
+    nameInput.setCustomValidity('');
+    powerInput.setCustomValidity('');
+    hoursInput.setCustomValidity('');
+    usageInput.setCustomValidity('');
 
     await refreshAppliances();
   } else {
@@ -123,6 +247,8 @@ function updateApplianceDisplay() {
   if (countBadge) {
     countBadge.textContent = appliances.length || 0;
     countBadge.className = 'badge ' + (appliances.length ? 'bg-primary' : 'bg-secondary');
+    countBadge.style.fontSize = '0.65rem';
+    countBadge.style.padding = '0.2rem 0.4rem';
   }
 
   if (appliances.length === 0) {
@@ -185,6 +311,12 @@ function openEditApplianceModal(applianceId) {
   hoursInput.value = app.hours_per_day || '';
   usageInput.value = app.usage_per_week || '';
 
+  // Clear any previous validation messages
+  nameInput.setCustomValidity('');
+  powerInput.setCustomValidity('');
+  hoursInput.setCustomValidity('');
+  usageInput.setCustomValidity('');
+
   const modalEl = document.getElementById('editApplianceModal');
   if (!modalEl) return;
 
@@ -200,13 +332,58 @@ function openEditApplianceModal(applianceId) {
 async function saveEditedAppliance() {
   if (!currentEditingApplianceId) return;
 
-  const name = document.getElementById('editDeviceName').value.trim();
-  const powerWatts = parseFloat(document.getElementById('editDevicePower').value);
-  const hours = parseFloat(document.getElementById('editDeviceHours').value);
-  const usagePerWeek = parseFloat(document.getElementById('editDeviceUsagePerWeek').value);
+  const nameInput = document.getElementById('editDeviceName');
+  const powerInput = document.getElementById('editDevicePower');
+  const hoursInput = document.getElementById('editDeviceHours');
+  const usageInput = document.getElementById('editDeviceUsagePerWeek');
 
-  if (!name || !powerWatts || !hours || !usagePerWeek) {
-    alert('Please fill in all fields');
+  const name = nameInput.value.trim();
+  const powerWatts = parseFloat(powerInput.value);
+  const hours = parseFloat(hoursInput.value);
+  const usagePerWeek = parseFloat(usageInput.value);
+
+  // Use native HTML5 validation
+  if (!name) {
+    nameInput.setCustomValidity('Please fill in all fields');
+    nameInput.reportValidity();
+    return;
+  }
+  nameInput.setCustomValidity('');
+
+  if (!powerWatts || isNaN(powerWatts)) {
+    powerInput.setCustomValidity('Please fill in all fields');
+    powerInput.reportValidity();
+    return;
+  }
+  powerInput.setCustomValidity('');
+
+  if (!hours || isNaN(hours)) {
+    hoursInput.setCustomValidity('Please fill in all fields');
+    hoursInput.reportValidity();
+    return;
+  }
+  hoursInput.setCustomValidity('');
+
+  if (!usagePerWeek || isNaN(usagePerWeek)) {
+    usageInput.setCustomValidity('Please fill in all fields');
+    usageInput.reportValidity();
+    return;
+  }
+  usageInput.setCustomValidity('');
+
+  // Validate hours per day
+  if (hours > 24) {
+    const hoursInput = document.getElementById('editDeviceHours');
+    validateEditHoursPerDay(hoursInput);
+    hoursInput.focus();
+    return;
+  }
+
+  // Validate usage per week
+  if (usagePerWeek > 7) {
+    const usageInput = document.getElementById('editDeviceUsagePerWeek');
+    validateEditUsagePerWeek(usageInput);
+    usageInput.focus();
     return;
   }
 
@@ -231,6 +408,13 @@ async function saveEditedAppliance() {
         editApplianceModalInstance.hide();
       }
       currentEditingApplianceId = null;
+      
+      // Clear validation messages
+      nameInput.setCustomValidity('');
+      powerInput.setCustomValidity('');
+      hoursInput.setCustomValidity('');
+      usageInput.setCustomValidity('');
+      
       await refreshAppliances();
     } else {
       alert('Error: ' + (result.error || 'Failed to update appliance'));
