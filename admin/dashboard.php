@@ -781,28 +781,20 @@ body {
           </td>
           <td><small><?= date('M d, Y', strtotime($u['created_at'])) ?></small></td>
           <td class="text-center">
-            <div class="d-flex align-items-center justify-content-center gap-2">
-              <button type="button" 
-                      class="btn btn-outline-primary change-btn edit-user-btn" 
-                      data-user-id="<?= $u['user_id'] ?>"
-                      data-fname="<?= htmlspecialchars($u['fname']) ?>"
-                      data-lname="<?= htmlspecialchars($u['lname']) ?>"
-                      data-email="<?= htmlspecialchars($u['email']) ?>"
-                      data-role="<?= htmlspecialchars($u['role']) ?>"
-                      data-city="<?= htmlspecialchars($u['city']) ?>"
-                      data-contact="<?= htmlspecialchars($u['cp_number']) ?>"
-                      data-status="<?= htmlspecialchars($u['acc_status']) ?>"
-                      title="Edit User">
-                <i class="bi-three-dots-vertical"></i>
-              </button>
-              <button type="button" 
-                      class="btn btn-outline-danger change-btn delete-user-btn" 
-                      data-user-id="<?= $u['user_id'] ?>"
-                      data-name="<?= htmlspecialchars($u['fname'].' '.$u['lname']) ?>"
-                      title="Delete User">
-                <i class="bi bi-trash"></i>
-              </button>
-            </div>
+            <button type="button" 
+                    class="btn btn-outline-primary change-btn edit-user-btn" 
+                    data-user-id="<?= $u['user_id'] ?>"
+                    data-fname="<?= htmlspecialchars($u['fname']) ?>"
+                    data-lname="<?= htmlspecialchars($u['lname']) ?>"
+                    data-email="<?= htmlspecialchars($u['email']) ?>"
+                    data-role="<?= htmlspecialchars($u['role']) ?>"
+                    data-city="<?= htmlspecialchars($u['city']) ?>"
+                    data-contact="<?= htmlspecialchars($u['cp_number']) ?>"
+                    data-status="<?= htmlspecialchars($u['acc_status']) ?>"
+                    data-name="<?= htmlspecialchars($u['fname'].' '.$u['lname']) ?>"
+                    title="Edit User">
+              <i class="bi-three-dots-vertical"></i>
+            </button>
           </td>
         </tr>
       <?php endwhile; ?>
@@ -899,11 +891,10 @@ body {
 <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow">
-      <div class="modal-header bg-primary bg-gradient text-white border-0 py-3">
-        <h6 class="modal-title fw-bold mb-0" id="editUserModalLabel">
+      <div class="modal-header bg-white border-bottom py-3">
+        <h6 class="modal-title fw-bold mb-0 text-dark" id="editUserModalLabel">
           <i class="bi bi-person-gear me-2"></i>Edit User Information
         </h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       
       <form id="editUserForm">
@@ -955,36 +946,45 @@ body {
           <div id="editUserAlert"></div>
         </div>
 
-        <div class="modal-footer bg-light border-0 py-2">
-          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
-            <i class="bi bi-x-circle me-1"></i>Cancel
+        <div class="modal-footer bg-light border-0 py-2 d-flex justify-content-between">
+          <button type="button" class="btn btn-danger btn-sm" id="deleteUserBtn">
+            <i class="bi bi-trash me-1"></i>Delete User
           </button>
-          <button type="submit" class="btn btn-primary btn-sm">
-            <i class="bi bi-check-circle me-1"></i>Save Changes
-          </button>
+          <div>
+            <button type="button" class="btn btn-secondary btn-sm me-1" data-bs-dismiss="modal">
+              <i class=></i>Cancel
+            </button>
+            <button type="submit" class="btn btn-primary btn-sm">
+              <i class="bi bi-check-circle me-1"></i>Save Changes
+            </button>
+          </div>
         </div>
       </form>
     </div>
   </div>
 </div>
 
-<!-- Delete User Modal -->
-<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="deleteUserModalLabel">Delete User</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-body text-center p-4">
+        <div class="mb-3">
+          <div class="rounded-circle mx-auto d-flex align-items-center justify-content-center" 
+               style="width: 80px; height: 80px; background: rgba(220, 53, 69, 0.1);">
+            <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 2.5rem;"></i>
+          </div>
+        </div>
+        <h5 class="fw-bold mb-2">Delete User?</h5>
+        <p class="text-muted mb-0" id="deleteUserName">Are you sure you want to delete this user?</p>
+        <p class="small text-danger mt-2 mb-0">This action cannot be undone.</p>
       </div>
-      <div class="modal-body">
-        <p>Are you sure you want to delete user <strong id="deleteUserName"></strong>?</p>
-        <p class="text-danger small mb-0">This action cannot be undone.</p>
-        <div id="deleteUserAlert"></div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
-          <i class="bi bi-trash me-1"></i>Delete User
+      <div class="modal-footer border-0 pt-0 pb-3 px-4 justify-content-center gap-2">
+        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle me-1"></i>Cancel
+        </button>
+        <button type="button" class="btn btn-danger px-4" id="confirmDeleteBtn">
+          <i class="bi bi-trash me-1"></i>Delete
         </button>
       </div>
     </div>
@@ -1044,10 +1044,12 @@ document.addEventListener('DOMContentLoaded', function() {
   // Edit User functionality
   const editButtons = document.querySelectorAll('.edit-user-btn');
   const editModal = new bootstrap.Modal(document.getElementById('editUserModal'));
+  let currentUserName = '';
   
   editButtons.forEach(btn => {
     btn.addEventListener('click', function() {
       const userId = this.getAttribute('data-user-id');
+      currentUserName = this.getAttribute('data-name');
       document.getElementById('editUserId').value = userId;
       document.getElementById('editFname').value = this.getAttribute('data-fname');
       document.getElementById('editLname').value = this.getAttribute('data-lname');
@@ -1097,25 +1099,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // Delete User functionality
-  const deleteButtons = document.querySelectorAll('.delete-user-btn');
-  const deleteModal = new bootstrap.Modal(document.getElementById('deleteUserModal'));
-  let deleteUserId = null;
-  
-  deleteButtons.forEach(btn => {
-    btn.addEventListener('click', function() {
-      deleteUserId = this.getAttribute('data-user-id');
-      document.getElementById('deleteUserName').textContent = this.getAttribute('data-name');
-      document.getElementById('deleteUserAlert').innerHTML = '';
-      deleteModal.show();
-    });
-  });
-
-  // Confirm delete
-  document.getElementById('confirmDeleteBtn').addEventListener('click', async function() {
-    if (!deleteUserId) return;
+  // Delete User functionality (inside edit modal)
+  document.getElementById('deleteUserBtn').addEventListener('click', async function() {
+    const userId = document.getElementById('editUserId').value;
     
-    const alertDiv = document.getElementById('deleteUserAlert');
+    if (!confirm(`Are you sure you want to delete user ${currentUserName}? This action cannot be undone.`)) {
+      return;
+    }
+    
+    const alertDiv = document.getElementById('editUserAlert');
     const deleteBtn = this;
     const originalText = deleteBtn.innerHTML;
     
@@ -1124,7 +1116,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     try {
       const formData = new FormData();
-      formData.append('user_id', deleteUserId);
+      formData.append('user_id', userId);
       
       const response = await fetch('delete_user.php', {
         method: 'POST',
