@@ -94,6 +94,8 @@ function updateBudgetStatus(monthlyCost) {
         </small>
       `;
     }
+    // Hide notification badge when budget is not set
+    hideBudgetNotification();
     return;
   }
 
@@ -116,6 +118,8 @@ function updateBudgetStatus(monthlyCost) {
         </small>
       `;
     }
+    // Hide notification badge
+    hideBudgetNotification();
   } else if (difference <= 0) {
     // Within budget (less than ₱50 under or at budget)
     budgetStatusBadge.textContent = 'Within Budget';
@@ -131,6 +135,8 @@ function updateBudgetStatus(monthlyCost) {
         </small>
       `;
     }
+    // Hide notification badge
+    hideBudgetNotification();
   } else if (difference <= budget * 0.1) {
     // Slightly over budget (up to 10% over)
     budgetStatusBadge.textContent = 'Over Budget';
@@ -144,6 +150,9 @@ function updateBudgetStatus(monthlyCost) {
         </small>
       `;
     }
+    // Save notification to database and show badge
+    saveBudgetNotification(`Budget Warning`, `You have exceeded your budget by ₱${differenceAbs}. Consider reducing appliance usage or adjusting your budget in Settings.`);
+    showBudgetNotification();
   } else {
     // Significantly over budget (more than 10% over)
     budgetStatusBadge.textContent = 'Over Budget';
@@ -157,6 +166,81 @@ function updateBudgetStatus(monthlyCost) {
         </small>
       `;
     }
+    // Save notification to database and show badge
+    saveBudgetNotification(`Budget Alert`, `You have significantly exceeded your budget by ₱${differenceAbs} (${percentage}% over). Please reduce appliance usage or increase your budget in Settings to avoid unexpected costs.`);
+    showBudgetNotification();
+  }
+}
+
+async function saveBudgetNotification(title, message) {
+  try {
+    // Check if notification already exists (to avoid duplicates)
+    const checkResponse = await fetch('api/check_budget_notification.php');
+    const checkResult = await checkResponse.json();
+    
+    // Only save if there's no unread notification
+    if (checkResult.success && !checkResult.has_unread) {
+      await fetch('api/save_notification.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          notification_type: 'budget',
+          channel: 'in-app',
+          related_type: 'budget',
+          title: title,
+          message: message
+        })
+      });
+    }
+  } catch (error) {
+    console.error('Error saving budget notification:', error);
+  }
+}
+
+async function showBudgetNotification() {
+  const notificationBadge = document.getElementById('budgetNotificationBadge');
+  if (!notificationBadge) return;
+
+  // Check database first to see if notification was already read
+  try {
+    const response = await fetch('api/check_budget_notification.php');
+    const result = await response.json();
+    
+    if (result.success && result.has_unread) {
+      // Show badge if there's an unread notification
+      notificationBadge.style.display = 'flex';
+    } else {
+      // Hide badge if notification was already read
+      notificationBadge.style.display = 'none';
+    }
+  } catch (error) {
+    console.error('Error checking notification:', error);
+    // Hide badge on error
+    notificationBadge.style.display = 'none';
+  }
+}
+
+async function hideBudgetNotification() {
+  const notificationBadge = document.getElementById('budgetNotificationBadge');
+  const notificationBox = document.getElementById('budgetNotificationBox');
+  if (notificationBadge) {
+    notificationBadge.style.display = 'none';
+  }
+  if (notificationBox) {
+    notificationBox.classList.remove('show');
+  }
+  
+  // Mark any remaining unread budget notifications as read when back within budget
+  try {
+    await fetch('api/mark_notification_read.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        notification_type: 'budget'
+      })
+    });
+  } catch (error) {
+    console.error('Error marking notifications as read:', error);
   }
 }
 

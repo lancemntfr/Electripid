@@ -97,9 +97,22 @@ if ($household_result && $household_result->num_rows > 0) {
         <i class="bi bi-lightning-charge-fill me-2" style="color: #00bfa5;"></i>Electripid
       </a>
       <div class="d-flex align-items-center">
-        <button class="nav-icon-btn position-relative me-3" type="button" style="font-size: 2rem;">
-          <i class="bi bi-bell"></i>
-        </button>
+        <div class="position-relative me-3">
+          <button class="nav-icon-btn position-relative" type="button" style="font-size: 2rem;" id="bellNotificationBtn" onclick="toggleBudgetNotification()">
+            <i class="bi bi-bell"></i>
+            <span class="budget-notification-badge" id="budgetNotificationBadge" style="display: none;">1</span>
+          </button>
+          <!-- Budget Notification Message Box -->
+          <div class="budget-notification-box" id="budgetNotificationBox">
+            <div class="notification-header">
+              <div class="notification-icon">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+              </div>
+              <h6 class="notification-title">Budget Alert</h6>
+            </div>
+            <p class="notification-message">You are over budget. This might affect your monthly spending. Consider reducing appliance usage or adjusting your budget in Settings.</p>
+          </div>
+        </div>
         <div class="dropdown ms-2">
           <button class="btn p-0 d-flex align-items-center" type="button" data-bs-toggle="dropdown" aria-expanded="false">
             <i class="bi bi-person-circle" style="font-size: 2rem; color: var(--secondary-color);"></i>
@@ -326,29 +339,31 @@ if ($household_result && $household_result->num_rows > 0) {
   </div>
 </div>
 
- <!-- Delete Confirmation Modal -->
-<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header border-0 pb-0">
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body text-center px-4 pb-4">
-        <div class="mb-3">
-          <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 3rem;"></i>
-        </div>
-        <h5 class="modal-title mb-2" id="deleteConfirmModalLabel">Delete Appliance</h5>
-        <p class="text-muted mb-4">Are you sure you want to delete this appliance? This action cannot be undone.</p>
-        <div class="d-grid gap-2">
-          <button type="button" class="btn btn-danger" onclick="confirmDeleteAppliance()">
-            <i class="bi bi-trash me-2"></i>Yes, Delete
-          </button>
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+    <!-- Delete Appliance Modal -->
+    <div class="modal fade" id="deleteApplianceModal" tabindex="-1" aria-labelledby="deleteApplianceModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.15);">
+          <div class="modal-header border-0 pb-0" style="padding: 1.5rem 1.5rem 0.5rem;">
+            <h5 class="modal-title" id="deleteApplianceModalLabel" style="font-weight: 600; color: #1e3a5f;">Remove Appliance</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body text-center" style="padding: 1.5rem;">
+            <div class="delete-confirmation-message" style="background: #fff5f5; border: 2px solid #f8d7da; border-radius: 8px; padding: 15px; margin-bottom: 1rem;">
+              <div style="display: flex; align-items: center; justify-content: center; gap: 10px; color: #842029;">
+                <i class="bi bi-exclamation-triangle-fill" style="font-size: 1.2rem;"></i>
+                <p class="mb-0" style="font-size: 0.95rem; margin: 0;">Are you sure you want to remove this appliance from your list? This action cannot be undone.</p>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer justify-content-center border-0 pt-0" style="padding: 0.5rem 1.5rem 1.5rem;">
+            <button type="button" class="btn btn-outline-secondary btn-sm px-4" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-danger btn-sm px-4" onclick="confirmDeleteAppliance()">
+              <i class="bi bi-trash me-1"></i>Delete
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</div>
 
 
 
@@ -580,6 +595,88 @@ if ($household_result && $household_result->num_rows > 0) {
   font-size: 0.9rem;
 }
 
+/* Budget Notification Badge */
+.budget-notification-badge {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  background-color: #dc3545;
+  color: white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: bold;
+  border: 2px solid white;
+  z-index: 10;
+}
+
+/* Budget Notification Message Box */
+.budget-notification-box {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 10px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 20px;
+  width: 320px;
+  z-index: 1050;
+  display: none;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.budget-notification-box.show {
+  display: block;
+}
+
+.budget-notification-box .notification-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.budget-notification-box .notification-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #fff3cd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: #856404;
+}
+
+.budget-notification-box .notification-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #333;
+  margin: 0;
+}
+
+.budget-notification-box .notification-message {
+  color: #6c757d;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
+}
 
 /* Remove number input spinners */
 #deviceHours::-webkit-outer-spin-button,
@@ -634,7 +731,55 @@ if ($household_result && $household_result->num_rows > 0) {
       currentRate = providerRates[currentProvider];
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
+    // Budget notification toggle function
+    async function toggleBudgetNotification() {
+      const notificationBox = document.getElementById('budgetNotificationBox');
+      const notificationBadge = document.getElementById('budgetNotificationBadge');
+      
+      if (notificationBox && notificationBadge) {
+        if (notificationBox.classList.contains('show')) {
+          // Hide message box
+          notificationBox.classList.remove('show');
+        } else {
+          // Show message box and hide badge immediately
+          if (notificationBadge.style.display !== 'none') {
+            notificationBox.classList.add('show');
+            notificationBadge.style.display = 'none';
+            
+            // Mark notification as read in database
+            try {
+              await fetch('api/mark_notification_read.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  notification_type: 'budget'
+                })
+              });
+            } catch (error) {
+              console.error('Error marking notification as read:', error);
+            }
+          }
+        }
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+      // Check database for unread notifications first
+      try {
+        const response = await fetch('api/check_budget_notification.php');
+        const result = await response.json();
+        
+        if (result.success && !result.has_unread) {
+          // If no unread notification, hide badge
+          const notificationBadge = document.getElementById('budgetNotificationBadge');
+          if (notificationBadge) {
+            notificationBadge.style.display = 'none';
+          }
+        }
+      } catch (error) {
+        console.error('Error checking notifications:', error);
+      }
+      
       updateAllMetrics();
       initForecastChart();
       loadAppliances();

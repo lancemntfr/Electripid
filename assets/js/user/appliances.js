@@ -381,20 +381,45 @@ async function saveEditedAppliance() {
 // NEW FUNCTION: Delete appliance from Edit Modal
 async function deleteApplianceFromEdit() {
   if (!currentEditingApplianceId) {
-    alert('No appliance selected');
     return;
   }
 
-  if (!confirm('Are you sure you want to delete this appliance? This action cannot be undone.')) {
-    return;
+  // Open the delete confirmation modal
+  const deleteModalEl = document.getElementById('deleteApplianceModal');
+  if (!deleteModalEl || typeof bootstrap === 'undefined') return;
+
+  let deleteModalInstance = bootstrap.Modal.getInstance(deleteModalEl);
+  if (!deleteModalInstance) {
+    deleteModalInstance = new bootstrap.Modal(deleteModalEl);
   }
+
+  // Set the appliance ID for deletion
+  deleteModalEl.setAttribute('data-appliance-id', currentEditingApplianceId);
+  
+  // Close the edit modal first
+  if (editApplianceModalInstance) {
+    editApplianceModalInstance.hide();
+  }
+
+  // Show the delete confirmation modal
+  deleteModalInstance.show();
+}
+
+// Function to confirm deletion from the modal
+async function confirmDeleteAppliance() {
+  const deleteModalEl = document.getElementById('deleteApplianceModal');
+  if (!deleteModalEl) return;
+  
+  const applianceId = deleteModalEl.getAttribute('data-appliance-id');
+  
+  if (!applianceId) return;
 
   try {
     const response = await fetch('appliances/remove_appliance.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        appliance_id: currentEditingApplianceId,
+        appliance_id: Number(applianceId),
         user_id: userId
       })
     });
@@ -402,9 +427,10 @@ async function deleteApplianceFromEdit() {
     const result = await response.json();
 
     if (result.success) {
-      // Close the Edit Modal
-      if (editApplianceModalInstance) {
-        editApplianceModalInstance.hide();
+      // Close the delete modal
+      const deleteModalInstance = bootstrap.Modal.getInstance(deleteModalEl);
+      if (deleteModalInstance) {
+        deleteModalInstance.hide();
       }
       
       // Reset current editing ID
@@ -412,14 +438,10 @@ async function deleteApplianceFromEdit() {
 
       // Refresh the appliances list
       await refreshAppliances();
-
-      // Show success message
-      alert('Appliance deleted successfully');
     } else {
-      alert('Error: ' + (result.error || 'Failed to delete appliance'));
+      console.error('Error deleting appliance:', result.error);
     }
   } catch (error) {
     console.error('Error deleting appliance:', error);
-    alert('An error occurred while deleting. Please try again.');
   }
 }
