@@ -189,6 +189,8 @@ body {
     padding: 1.5rem;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     min-height: 260px;
+       display: flex;
+    flex-direction: column;
 }
 
 .chart-container h5 {
@@ -207,11 +209,18 @@ body {
 }
 
 /* Scrollable table container */
+
+
+.table-responsive-scrollable thead {
+    position: sticky;
+    top: 56px; 
+    z-index: 20;
+    background: #f8f9fa;
+}
+
 .table-responsive-scrollable {
     max-height: 600px;
     overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(30, 136, 229, 0.5) rgba(0, 0, 0, 0.1);
 }
 
 .table-responsive-scrollable::-webkit-scrollbar {
@@ -297,28 +306,18 @@ body {
 
 /* Role Badge Styles - Enhanced Design */
 .badge-role-admin {
-    background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%) !important;
+    background: #7C3AED !important;
     color: white;
-    box-shadow: 0 2px 4px rgba(124, 58, 237, 0.3);
     transition: all 0.3s ease;
 }
 
-.badge-role-admin:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(124, 58, 237, 0.4);
-}
 
 .badge-role-user {
-    background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%) !important;
+    background: #1E88E5 !important;
     color: white;
-    box-shadow: 0 2px 4px rgba(30, 136, 229, 0.3);
     transition: all 0.3s ease;
 }
 
-.badge-role-user:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(30, 136, 229, 0.4);
-}
 
 /* Button Styles - Match User Dashboard */
 .btn {
@@ -780,15 +779,16 @@ body {
   </div>
 </div>
 
-<div class="chart-container h-100 d-flex flex-column">
-  <div class="d-flex justify-content-between align-items-center mb-3">
+<div class="chart-container mb-4">
+<div class="table-toolbar d-flex justify-content-between align-items-center mb-3">
     <div class="d-flex gap-2">
       <input type="text" id="searchUsers" class="form-control" style="width:250px" placeholder="🔍 Search users...">
     </div>
   </div>
 
-  <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+  <div class="table-responsive table-responsive-scrollable">
     <table class="table table-hover align-middle" id="usersTable">
+
       <thead class="table-light">
         <tr>
           <th class="text-center">ID</th>
@@ -805,7 +805,7 @@ body {
       </thead>
       <tbody id="usersTableBody">
 
-      <?php while($u=mysqli_fetch_assoc($users)): ?>
+<?php while($u=mysqli_fetch_assoc($users)): ?>
         <tr data-user-id="<?= $u['user_id'] ?>" 
             data-name="<?= htmlspecialchars(strtolower($u['fname'].' '.$u['lname'])) ?>"
             data-email="<?= htmlspecialchars(strtolower($u['email'])) ?>"
@@ -815,10 +815,10 @@ body {
             data-barangay="<?= htmlspecialchars(strtolower($u['barangay'] ?? '')) ?>"
             data-status="<?= htmlspecialchars(strtolower($u['acc_status'])) ?>"
             data-date="<?= strtotime($u['created_at']) ?>">
-          <td class="text-center"><strong>#<?= $u['user_id'] ?></strong></td>
+          <td class="text-center"><?= $u['user_id'] ?></td>
           <td class="text-center">
             <div>
-              <strong><?= htmlspecialchars($u['fname'].' '.$u['lname']) ?></strong>
+              <?= htmlspecialchars($u['fname'].' '.$u['lname']) ?>
             </div>
           </td>
           <td class="text-center"><?= htmlspecialchars($u['email']) ?></td>
@@ -909,9 +909,11 @@ body {
 </div>
 
 <div class="chart-container h-100 d-flex flex-column">
-  <h5 class="mb-3"><i class="bi bi-list-ul me-2"></i>List of Donors</h5>
-
+  <h5 class="mb-3 table-toolbar">
+    <i class="bi bi-list-ul me-2"></i>List of Donors
+  </h5>
   <div class="table-responsive table-responsive-scrollable">
+
     <table class="table table-hover align-middle">
       <thead class="table-light">
         <tr>
