@@ -5,8 +5,8 @@
     require_once __DIR__ . '/resend_code.php';
     require_once __DIR__ . '/../../api/update_sync_user.php';
 
-    if (!isset($_SESSION['pending_registration'])) {
-        header('Location: ../../register.php');
+    if (!isset($_SESSION['pending_registration']) && !isset($_SESSION['email_verification'])) {
+        header('Location: ../../login.php');
         exit;
     }
 
@@ -26,66 +26,127 @@
 
             if (empty($code)) {
                 $error = "Please enter the verification code.";
-            } elseif (!isset($_SESSION['pending_registration']['verification_id'])) {
-                $error = "Session expired. Please start registration again.";
             } else {
-                $verification_id = $_SESSION['pending_registration']['verification_id'];
-                
-                $stmt = $conn->prepare("SELECT verification_id, expires_at  FROM VERIFICATION  WHERE verification_id=? AND verification_code=? AND verification_type='email' AND is_verified=0");
-                $stmt->bind_param("is", $verification_id, $code);
-                $stmt->execute();
-                $result = $stmt->get_result();
+                // Handle both pending registration and existing user verification
+                if (isset($_SESSION['pending_registration'])) {
+                    // Registration verification
+                    if (!isset($_SESSION['pending_registration']['verification_id'])) {
+                        $error = "Session expired. Please start registration again.";
+                    } else {
+                        $verification_id = $_SESSION['pending_registration']['verification_id'];
 
-                if ($result->num_rows === 1) {
-                    $row = $result->fetch_assoc();
+                        $stmt = $conn->prepare("SELECT verification_id, expires_at  FROM VERIFICATION  WHERE verification_id=? AND verification_code=? AND verification_type='email' AND is_verified=0");
+                        $stmt->bind_param("is", $verification_id, $code);
+                        $stmt->execute();
+                        $result = $stmt->get_result();
 
-                    if (strtotime($row['expires_at']) >= time()) {
-                        $pending_data = $_SESSION['pending_registration'];
-                        $source_system = 'Electripid'; // Track source
+                        if ($result->num_rows === 1) {
+                            $row = $result->fetch_assoc();
 
-                        $email_check = $conn->prepare("SELECT user_id FROM USER WHERE email=? LIMIT 1");
-                        $email_check->bind_param("s", $pending_data['email']);
-                        $email_check->execute();
-                        $email_result = $email_check->get_result();
-                        if ($email_result->num_rows > 0) {
-                            $error = "This email is already registered. Please login or use another email.";
+                            if (strtotime($row['expires_at']) >= time()) {
+                                $pending_data = $_SESSION['pending_registration'];
+                                $source_system = 'Electripid'; // Track source
+
+                                $email_check = $conn->prepare("SELECT user_id FROM USER WHERE email=? LIMIT 1");
+                                $email_check->bind_param("s", $pending_data['email']);
+                                $email_check->execute();
+                                $email_result = $email_check->get_result();
+                                if ($email_result->num_rows > 0) {
+                                    $error = "This email is already registered. Please login or use another email.";
+                                } else {
+                                    $stmt_insert = $conn->prepare("INSERT INTO USER (fname, lname, email, cp_number, city, barangay, password, source_system) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                                    $stmt_insert->bind_param(
+                                        "ssssssss",
+                                        $pending_data['fname'],
+                                        $pending_data['lname'],
+                                        $pending_data['email'],
+                                        $pending_data['cp_number'],
+                                        $pending_data['city'],
+                                        $pending_data['barangay'],
+                                        $pending_data['password'],
+                                        $source_system
+                                    );
+                                    $stmt_insert->execute();
+                                    $user_id = $conn->insert_id;
+
+                                    syncUserToAirlyft($user_id);
+
+                                    // Create HOUSEHOLD record
+                                    $provider_id = $pending_data['provider_id'];
+                                    $stmt_household = $conn->prepare("INSERT INTO HOUSEHOLD (user_id, provider_id) VALUES (?, ?)");
+                                    $stmt_household->bind_param("ii", $user_id, $provider_id);
+                                    $stmt_household->execute();
+
+                                    $stmt_update = $conn->prepare("UPDATE VERIFICATION SET user_id=?, is_verified=1 WHERE verification_id=?");
+                                    $stmt_update->bind_param("ii", $user_id, $row['verification_id']);
+                                    $stmt_update->execute();
+
+                                    unset($_SESSION['pending_registration']);
+                                    header("Location: ../../login.php?verified=1");
+                                    exit;
+                                }
+                            } else {
+                                $error = "Verification code expired.";
+                            }
                         } else {
-                            $stmt_insert = $conn->prepare("INSERT INTO USER (fname, lname, email, cp_number, city, barangay, password, source_system) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                            $stmt_insert->bind_param(
-                                "ssssssss",
-                                $pending_data['fname'],
-                                $pending_data['lname'],
-                                $pending_data['email'],
-                                $pending_data['cp_number'],
-                                $pending_data['city'],
-                                $pending_data['barangay'],
-                                $pending_data['password'],
-                                $source_system
-                            );
-                            $stmt_insert->execute();
-                            $user_id = $conn->insert_id;
+                            $error = "Invalid verification code.";
+                        }
+                    }
+                } elseif (isset($_SESSION['email_verification'])) {
+                    // Existing user email verification
+                    $user_id = $_SESSION['email_verification']['user_id'];
+                    $expected_code = $_SESSION['email_verification']['verification_code'];
+                    $expires_at = $_SESSION['email_verification']['expires_at'];
+                    $email_to_verify = $_SESSION['email_verification']['email'];
+                    $original_email = $_SESSION['email_verification']['original_email'] ?? $email_to_verify;
 
-                            syncUserToAirlyft($user_id);
+                    if (strtotime($expires_at) < time()) {
+                        $error = "Verification code expired.";
+                    } elseif ($code === $expected_code) {
+                        $verification_success = false;
 
-                            // Create HOUSEHOLD record
-                            $provider_id = $pending_data['provider_id'];
-                            $stmt_household = $conn->prepare("INSERT INTO HOUSEHOLD (user_id, provider_id) VALUES (?, ?)");
-                            $stmt_household->bind_param("ii", $user_id, $provider_id);
-                            $stmt_household->execute();
+                        // Check if this is a new email verification
+                        if ($email_to_verify !== $original_email) {
+                            // Check if the new email is already taken by another user
+                            $check_email_stmt = $conn->prepare("SELECT user_id FROM USER WHERE email=? AND user_id != ? LIMIT 1");
+                            $check_email_stmt->bind_param("si", $email_to_verify, $user_id);
+                            $check_email_stmt->execute();
+                            $check_email_result = $check_email_stmt->get_result();
 
-                            $stmt_update = $conn->prepare("UPDATE VERIFICATION SET user_id=?, is_verified=1 WHERE verification_id=?");
-                            $stmt_update->bind_param("ii", $user_id, $row['verification_id']);
+                            if ($check_email_result->num_rows > 0) {
+                                $error = "This email address is already registered by another user. Please choose a different email address.";
+                            } else {
+                                // This is a new email - update the user's email address
+                                $update_email_stmt = $conn->prepare("UPDATE USER SET email=? WHERE user_id=?");
+                                $update_email_stmt->bind_param("si", $email_to_verify, $user_id);
+                                $update_email_stmt->execute();
+
+                                // Mark any existing email verifications as verified for this user
+                                $stmt_update_existing = $conn->prepare("UPDATE VERIFICATION SET is_verified=1 WHERE user_id=? AND verification_type='email'");
+                                $stmt_update_existing->bind_param("i", $user_id);
+                                $stmt_update_existing->execute();
+
+                                $verification_success = true;
+                            }
+                        } else {
+                            // This is verification of existing email
+                            $stmt_update = $conn->prepare("UPDATE VERIFICATION SET is_verified=1 WHERE user_id=? AND verification_type='email' AND verification_code=? AND is_verified=0");
+                            $stmt_update->bind_param("is", $user_id, $code);
                             $stmt_update->execute();
 
-                            unset($_SESSION['pending_registration']);
-                            header("Location: ../../login.php?verified=1");
+                            $verification_success = true;
+                        }
+
+                        if ($verification_success) {
+                            unset($_SESSION['email_verification']);
+                            header("Location: ../../settings.php?verified=1");
                             exit;
                         }
                     } else {
-                        $error = "Verification code expired.";
+                        $error = "Invalid verification code.";
                     }
                 } else {
-                    $error = "Invalid verification code.";
+                    $error = "Session expired. Please try again.";
                 }
             }
         }
@@ -206,7 +267,7 @@
         
         <p class="text-center text-muted small mt-3 mb-0" style="font-size: 0.75rem;">Electripid admin will never ask for your own 6 digit code</p>
         <p class="text-center mt-3 mb-0">
-            <a href="../../register.php" class="text-decoration-none">
+            <a href="<?php echo isset($_SESSION['email_verification']) ? '../../settings.php' : '../../register.php'; ?>" class="text-decoration-none">
                 <i class="bi bi-arrow-left me-1"></i> Back
             </a>
         </p>

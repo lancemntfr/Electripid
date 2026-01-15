@@ -28,16 +28,16 @@
     // Load notification preferences (default to true if not set)
     $notify_email = true;
     $notify_sms = true;
-    
+
     // Check if columns exist first
     $check_email_col = executeQuery("SHOW COLUMNS FROM USER LIKE 'notify_email'");
     $check_sms_col = executeQuery("SHOW COLUMNS FROM USER LIKE 'notify_sms'");
-    
-    if ($check_email_col && mysqli_num_rows($check_email_col) > 0 && 
+
+    if ($check_email_col && mysqli_num_rows($check_email_col) > 0 &&
         $check_sms_col && mysqli_num_rows($check_sms_col) > 0) {
         $notif_pref_query = "SELECT notify_email, notify_sms FROM USER WHERE user_id = '$user_id_escaped'";
         $notif_pref_result = executeQuery($notif_pref_query);
-        
+
         if ($notif_pref_result && mysqli_num_rows($notif_pref_result) > 0) {
             $pref_row = mysqli_fetch_assoc($notif_pref_result);
             $notify_email = isset($pref_row['notify_email']) ? (bool)$pref_row['notify_email'] : true;
@@ -100,23 +100,6 @@
         }
     }
 
-    // Get city code from city name (for dropdown)
-    $city_code = '';
-    if (!empty($user['city'])) {
-        // Try to find city code from API
-        $cities_json = @file_get_contents("https://psgc.cloud/api/cities");
-        $municipalities_json = @file_get_contents("https://psgc.cloud/api/municipalities");
-        $cities = json_decode($cities_json, true) ?? [];
-        $municipalities = json_decode($municipalities_json, true) ?? [];
-        $all = array_merge($cities, $municipalities);
-        
-        foreach ($all as $loc) {
-            if (stripos($loc['name'], $user['city']) !== false || stripos($user['city'], $loc['name']) !== false) {
-                $city_code = $loc['code'];
-                break;
-            }
-        }
-    }
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -192,9 +175,6 @@
             transform: scale(1.05);
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
-        .phone-verify-btn {
-            margin-top: 0;
-        }
         .settings-section {
             margin-bottom: 20px;
         }
@@ -248,11 +228,6 @@
         }
         .settings-card {
             padding: 20px;
-        }
-        .code-input-box:focus {
-            outline: none;
-            border-color: #1e88e5;
-            box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
         }
     </style>
 </head>
@@ -320,6 +295,20 @@
                 <?php if ($phone_verified): ?>
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
                         <i class="bi bi-check-circle-fill me-2"></i>Phone number verified and saved successfully!
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (isset($_GET['error']) && $_GET['error'] === 'email_taken'): ?>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>This email address is already registered by another user. Please choose a different email address.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (isset($_GET['verified']) && $_GET['verified'] === '1'): ?>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="bi bi-check-circle-fill me-2"></i>Email verified successfully!
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 <?php endif; ?>
@@ -512,15 +501,15 @@
                     <div class="mb-3">
                         <label class="form-label">Email Address <span class="text-danger">*</span></label>
                         <div class="d-flex align-items-center gap-2">
-                            <input type="email" class="form-control flex-grow-1" id="contactsEmailInput" required value="<?= htmlspecialchars($user['email'], ENT_QUOTES) ?>" onchange="checkEmailChanged()">
-                            <span class="text-<?= $email_verified ? 'success' : 'danger' ?> small" id="emailStatusText" style="min-width: 90px; text-align: right;">
+                            <input type="email" class="form-control flex-grow-1" id="contactsEmailInput" required value="<?= htmlspecialchars($user['email'], ENT_QUOTES) ?>" oninput="checkEmailChangedModal()">
+                            <span class="text-<?= $email_verified ? 'success' : 'danger' ?> small" id="emailStatusTextModal" style="min-width: 90px; text-align: right;">
                                 <?= $email_verified ? 'Verified' : 'Not verified' ?>
                             </span>
                         </div>
-                        <div id="emailVerifyLink" style="display: none;">
-                            <small class="text-danger">
-                                <a href="#" class="text-decoration-none" onclick="event.preventDefault(); openEmailVerifyModal();">Click here to verify your email</a>
-                            </small>
+                        <div id="emailVerifyButtonModal" style="display: none;" class="mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="verifyEmailFromModal(event)">
+                                <i class="bi bi-envelope-check me-1"></i>Verify Email
+                            </button>
                         </div>
                     </div>
                     <div class="mb-3">
@@ -559,30 +548,6 @@
         </div>
     </div>
 
-    <!-- Change Field Modal -->
-    <div class="modal fade" id="changeModal" tabindex="-1" aria-labelledby="changeModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="changeModalLabel">Change <span id="changeFieldName"></span></h5>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">New <span id="changeFieldLabel"></span> <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="changeFieldInput" required>
-                        <input type="hidden" id="changeFieldType">
-                    </div>
-                    <div id="changeAlert"></div>
-                </div>
-                <div class="modal-footer d-flex justify-content-center gap-2">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="saveChangeBtn" onclick="saveChange()">
-                        <i class="bi bi-check-circle me-1"></i>Save Changes
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Location Modal -->
     <div class="modal fade" id="locationModal" tabindex="-1" aria-labelledby="locationModalLabel" aria-hidden="true">
@@ -790,47 +755,12 @@
         </div>
     </div>
 
-    <!-- Email Verification Modal -->
-    <div class="modal fade" id="emailVerifyModal" tabindex="-1" aria-labelledby="emailVerifyModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" style="max-width: 500px;">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="emailVerifyModalLabel">Verify Email Address</h5>
-                </div>
-                <div class="modal-body">
-                    <p class="text-muted text-center mb-4">Enter the 6-digit code sent to you.</p>
-                    <div id="emailVerifyError"></div>
-                    <form method="POST" id="emailVerifyForm" class="mt-3">
-                        <input type="hidden" name="code" id="emailFullCode" required>
-                        <div class="code-input-container" style="display: flex; justify-content: center; align-items: center; margin: 30px 0;">
-                            <div class="code-input-group" style="display: flex; gap: 8px; align-items: center; justify-content: center;">
-                                <input type="text" class="code-input-box" maxlength="1" pattern="[0-9]" inputmode="numeric" id="emailCode1" autocomplete="off" style="width: 50px; height: 60px; text-align: center; font-size: 1.5rem; font-weight: 600; border: 2px solid #e9ecef; border-radius: 8px; background: white; transition: all 0.3s ease;">
-                                <input type="text" class="code-input-box" maxlength="1" pattern="[0-9]" inputmode="numeric" id="emailCode2" autocomplete="off" style="width: 50px; height: 60px; text-align: center; font-size: 1.5rem; font-weight: 600; border: 2px solid #e9ecef; border-radius: 8px; background: white; transition: all 0.3s ease;">
-                                <input type="text" class="code-input-box" maxlength="1" pattern="[0-9]" inputmode="numeric" id="emailCode3" autocomplete="off" style="width: 50px; height: 60px; text-align: center; font-size: 1.5rem; font-weight: 600; border: 2px solid #e9ecef; border-radius: 8px; background: white; transition: all 0.3s ease;">
-                                <input type="text" class="code-input-box" maxlength="1" pattern="[0-9]" inputmode="numeric" id="emailCode4" autocomplete="off" style="width: 50px; height: 60px; text-align: center; font-size: 1.5rem; font-weight: 600; border: 2px solid #e9ecef; border-radius: 8px; background: white; transition: all 0.3s ease;">
-                                <input type="text" class="code-input-box" maxlength="1" pattern="[0-9]" inputmode="numeric" id="emailCode5" autocomplete="off" style="width: 50px; height: 60px; text-align: center; font-size: 1.5rem; font-weight: 600; border: 2px solid #e9ecef; border-radius: 8px; background: white; transition: all 0.3s ease;">
-                                <input type="text" class="code-input-box" maxlength="1" pattern="[0-9]" inputmode="numeric" id="emailCode6" autocomplete="off" style="width: 50px; height: 60px; text-align: center; font-size: 1.5rem; font-weight: 600; border: 2px solid #e9ecef; border-radius: 8px; background: white; transition: all 0.3s ease;">
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer d-flex justify-content-center gap-2">
-                    <button type="button" class="btn btn-outline-secondary" onclick="closeEmailVerifyModalAndOpenContacts()">Close</button>
-                    <button type="button" class="btn btn-primary" id="emailVerifyBtn" onclick="submitEmailVerify()">Verify</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const currentCity = '<?= htmlspecialchars($user['city']) ?>';
         const currentBarangay = '<?= htmlspecialchars($user['barangay']) ?>';
-        const cityCode = '<?= $city_code ?>';
-        let currentField = '';
-        let currentFieldType = '';
 
-        // Handle collapse toggle for section headers
         document.addEventListener('DOMContentLoaded', function() {
             const collapseElements = document.querySelectorAll('.collapse');
             collapseElements.forEach(function(collapse) {
@@ -849,7 +779,6 @@
             });
         });
 
-        // Load cities for location modal
         function loadCitiesForModal() {
             const citySelect = document.getElementById('modalCity');
             const barangaySelect = document.getElementById('modalBarangay');
@@ -904,21 +833,10 @@
 
         function openContactsModal() {
             document.getElementById('contactsAlert').innerHTML = '';
+            document.getElementById('emailVerifyButtonModal').style.display = 'none';
+            document.getElementById('emailStatusTextModal').textContent = '<?= $email_verified ? 'Verified' : 'Not verified' ?>';
+            document.getElementById('emailStatusTextModal').className = 'text-<?= $email_verified ? 'success' : 'danger' ?> small';
             const modal = new bootstrap.Modal(document.getElementById('contactsModal'));
-            modal.show();
-        }
-
-        function openChangeModal(field, label, currentValue, type) {
-            currentField = field;
-            currentFieldType = type;
-            document.getElementById('changeFieldName').textContent = label;
-            document.getElementById('changeFieldLabel').textContent = label;
-            document.getElementById('changeFieldInput').value = currentValue;
-            document.getElementById('changeFieldType').value = type;
-            document.getElementById('changeFieldInput').type = type;
-            document.getElementById('changeAlert').innerHTML = '';
-            
-            const modal = new bootstrap.Modal(document.getElementById('changeModal'));
             modal.show();
         }
 
@@ -953,8 +871,7 @@
             document.getElementById('passwordAlert').innerHTML = '';
             document.getElementById('passwordMatch').innerHTML = '';
             checkPasswordStrength();
-            
-            // Setup password toggles
+
             setupPasswordToggle('toggleModalPassword', 'modalPassword');
             setupPasswordToggle('toggleModalConfirmPassword', 'modalConfirmPassword');
             
@@ -1017,24 +934,72 @@
         const hasInitialPhone = <?= !empty($user['cp_number']) ? 'true' : 'false' ?>;
         const phoneInitiallyVerified = <?= $phone_verified_status ? 'true' : 'false' ?>;
 
-        function checkEmailChanged() {
+        function checkEmailChangedModal() {
             const emailInput = document.getElementById('contactsEmailInput');
-            const emailStatusText = document.getElementById('emailStatusText');
-            const emailVerifyLink = document.getElementById('emailVerifyLink');
+            const emailStatusText = document.getElementById('emailStatusTextModal');
+            const emailVerifyButton = document.getElementById('emailVerifyButtonModal');
+
+            if (!emailInput || !emailStatusText || !emailVerifyButton) {
+                return;
+            }
+
             const currentEmail = emailInput.value.trim();
-            
+
             if (currentEmail !== originalEmail && currentEmail !== '') {
                 emailStatusText.textContent = 'Not verified';
                 emailStatusText.className = 'text-danger small';
                 emailStatusText.style.minWidth = '90px';
                 emailStatusText.style.textAlign = 'right';
-                emailVerifyLink.style.display = 'block';
+                emailVerifyButton.style.display = 'block';
             } else {
                 emailStatusText.textContent = '<?= $email_verified ? 'Verified' : 'Not verified' ?>';
                 emailStatusText.className = 'text-<?= $email_verified ? 'success' : 'danger' ?> small';
                 emailStatusText.style.minWidth = '90px';
                 emailStatusText.style.textAlign = 'right';
-                emailVerifyLink.style.display = 'none';
+                emailVerifyButton.style.display = 'none';
+            }
+        }
+
+        function verifyEmailFromModal(event) {
+            console.log('verifyEmailFromModal called');
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            try {
+                const emailInput = document.getElementById('contactsEmailInput');
+                const newEmail = emailInput ? emailInput.value.trim() : '';
+
+                console.log('New email:', newEmail, 'Original email:', originalEmail);
+
+                if (!newEmail || newEmail === originalEmail) {
+                    alert('Please enter a different email address first.');
+                    return;
+                }
+
+                console.log('Closing modal...');
+
+                const modalElement = document.getElementById('contactsModal');
+                const modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) {
+                    modal.hide();
+                }
+
+                console.log('Setting timeout for redirect...');
+
+                modalElement.addEventListener('hidden.bs.modal', function() {
+                    console.log('Modal fully hidden, redirecting...');
+                    window.location.href = 'verification/email/request_verification.php?new_email=' + encodeURIComponent(newEmail);
+                }, { once: true });
+
+                setTimeout(() => {
+                    console.log('Fallback redirect after timeout');
+                    window.location.href = 'verification/email/request_verification.php?new_email=' + encodeURIComponent(newEmail);
+                }, 500);
+            } catch (error) {
+                console.error('Error in verifyEmailFromModal:', error);
+                alert('An error occurred. Please try again.');
             }
         }
 
@@ -1054,7 +1019,6 @@
                     phoneVerifyLinkModal.style.display = 'block';
                 }
             } else {
-                // Revert to original state
                 if (!hasInitialPhone) {
                     phoneStatusText.textContent = 'add contact number';
                     phoneStatusText.className = 'text-secondary small';
@@ -1072,64 +1036,6 @@
                         phoneVerifyLinkModal.style.display = phoneInitiallyVerified ? 'none' : 'block';
                     }
                 }
-            }
-        }
-
-        function openEmailVerifyModal() {
-            const emailInput = document.getElementById('contactsEmailInput');
-            const email = emailInput.value.trim();
-            
-            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                alert('Please enter a valid email address first.');
-                return;
-            }
-            
-            // Close Change Contacts modal
-            const contactsModal = bootstrap.Modal.getInstance(document.getElementById('contactsModal'));
-            if (contactsModal) {
-                contactsModal.hide();
-            }
-            
-            document.getElementById('emailVerifyError').innerHTML = '';
-            
-            // Clear code inputs
-            for (let i = 1; i <= 6; i++) {
-                document.getElementById('emailCode' + i).value = '';
-            }
-            
-            // Send OTP
-            sendEmailOTP(email);
-            
-            // Show email verify modal after contacts modal is hidden
-            setTimeout(() => {
-                const modal = new bootstrap.Modal(document.getElementById('emailVerifyModal'));
-                modal.show();
-                
-                // Focus first input
-                setTimeout(() => {
-                    document.getElementById('emailCode1').focus();
-                }, 300);
-            }, 300);
-        }
-
-        async function sendEmailOTP(email) {
-            try {
-                const response = await fetch('settings/send_email_otp.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ email: email })
-                });
-                
-                const result = await response.json();
-                
-                if (!result.success) {
-                    document.getElementById('emailVerifyError').innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>${result.error || 'Failed to send OTP.'}</div>`;
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('emailVerifyError').innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>An error occurred. Please try again.</div>';
             }
         }
 
@@ -1192,66 +1098,6 @@
                     }, 1000);
                 } else {
                     alertDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>${result.error || 'Failed to update contacts.'}</div>`;
-                    saveBtn.disabled = false;
-                    saveBtn.innerHTML = originalText;
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alertDiv.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>An error occurred. Please try again.</div>';
-                saveBtn.disabled = false;
-                saveBtn.innerHTML = originalText;
-            }
-        }
-
-        async function saveChange() {
-            const newValue = document.getElementById('changeFieldInput').value.trim();
-            const alertDiv = document.getElementById('changeAlert');
-            const saveBtn = document.getElementById('saveChangeBtn');
-            
-            if (!newValue) {
-                alertDiv.innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Please enter a value.</div>';
-                return;
-            }
-            
-            // Validate email format if changing email
-            if (currentField === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newValue)) {
-                alertDiv.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>Please enter a valid email address.</div>';
-                return;
-            }
-            
-            const originalText = saveBtn.innerHTML;
-            saveBtn.disabled = true;
-            saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
-
-            try {
-                const formData = {
-                    [currentField]: newValue
-                };
-
-                const response = await fetch('settings/update_profile.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        fname: currentField === 'fname' ? newValue : '<?= htmlspecialchars($user['fname'], ENT_QUOTES) ?>',
-                        lname: currentField === 'lname' ? newValue : '<?= htmlspecialchars($user['lname'], ENT_QUOTES) ?>',
-                        email: currentField === 'email' ? newValue : '<?= htmlspecialchars($user['email'], ENT_QUOTES) ?>',
-                        city: '<?= htmlspecialchars($user['city'], ENT_QUOTES) ?>',
-                        barangay: '<?= htmlspecialchars($user['barangay'], ENT_QUOTES) ?>',
-                        provider_id: <?= $current_provider_id ?: 0 ?>
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    alertDiv.innerHTML = '<div class="alert alert-success"><i class="bi bi-check-circle me-2"></i>Updated successfully!</div>';
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1000);
-                } else {
-                    alertDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>${result.error || 'Failed to update.'}</div>`;
                     saveBtn.disabled = false;
                     saveBtn.innerHTML = originalText;
                 }
@@ -1557,125 +1403,6 @@
             }, 300);
         }
 
-        function closeEmailVerifyModalAndOpenContacts() {
-            const emailVerifyModal = bootstrap.Modal.getInstance(document.getElementById('emailVerifyModal'));
-            if (emailVerifyModal) {
-                emailVerifyModal.hide();
-            }
-            
-            setTimeout(() => {
-                const contactsModal = new bootstrap.Modal(document.getElementById('contactsModal'));
-                contactsModal.show();
-            }, 300);
-        }
-
-        // Email OTP input handling
-        document.addEventListener('DOMContentLoaded', function() {
-            const emailInputs = ['emailCode1', 'emailCode2', 'emailCode3', 'emailCode4', 'emailCode5', 'emailCode6'];
-            const emailInputElements = emailInputs.map(id => document.getElementById(id));
-            
-            if (emailInputElements[0]) {
-                emailInputElements.forEach((input, index) => {
-                    input.addEventListener('input', function(e) {
-                        if (!/^\d$/.test(e.target.value)) {
-                            e.target.value = '';
-                            return;
-                        }
-                        
-                        if (e.target.value && index < emailInputElements.length - 1) {
-                            emailInputElements[index + 1].focus();
-                        }
-                        
-                        updateEmailFullCode();
-                    });
-                    
-                    input.addEventListener('paste', function(e) {
-                        e.preventDefault();
-                        const pastedData = (e.clipboardData || window.clipboardData).getData('text');
-                        if (/^\d{6}$/.test(pastedData)) {
-                            pastedData.split('').forEach((digit, idx) => {
-                                if (idx < emailInputElements.length) {
-                                    emailInputElements[idx].value = digit;
-                                }
-                            });
-                            emailInputElements[emailInputElements.length - 1].focus();
-                            updateEmailFullCode();
-                        }
-                    });
-                    
-                    input.addEventListener('keydown', function(e) {
-                        if (e.key === 'Backspace' && !e.target.value && index > 0) {
-                            emailInputElements[index - 1].focus();
-                            emailInputElements[index - 1].value = '';
-                            updateEmailFullCode();
-                        }
-                    });
-                    
-                    input.addEventListener('keypress', function(e) {
-                        if (!/^\d$/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-                            e.preventDefault();
-                        }
-                    });
-                });
-                
-                function updateEmailFullCode() {
-                    const fullCode = emailInputElements.map(input => input.value).join('');
-                    document.getElementById('emailFullCode').value = fullCode;
-                }
-                
-                async function submitEmailVerify() {
-                    const fullCode = emailInputElements.map(input => input.value).join('');
-                    
-                    if (fullCode.length !== 6) {
-                        document.getElementById('emailVerifyError').innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>Please enter the complete 6-digit code.</div>';
-                        emailInputElements[0].focus();
-                        return;
-                    }
-                    
-                    const emailInput = document.getElementById('contactsEmailInput');
-                    const email = emailInput.value.trim();
-                    const verifyBtn = document.getElementById('emailVerifyBtn');
-                    const originalText = verifyBtn.innerHTML;
-                    verifyBtn.disabled = true;
-                    verifyBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying...';
-                    
-                    try {
-                        const response = await fetch('settings/verify_email_otp.php', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                email: email,
-                                code: fullCode
-                            })
-                        });
-                        
-                        const result = await response.json();
-                        
-                        if (result.success) {
-                            document.getElementById('emailVerifyError').innerHTML = '<div class="alert alert-success"><i class="bi bi-check-circle me-2"></i>Email verified successfully!</div>';
-                            bootstrap.Modal.getInstance(document.getElementById('emailVerifyModal')).hide();
-                            setTimeout(() => {
-                                location.reload();
-                            }, 1000);
-                        } else {
-                            document.getElementById('emailVerifyError').innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>${result.error || 'Invalid or expired code.'}</div>`;
-                            emailInputElements[0].focus();
-                            verifyBtn.disabled = false;
-                            verifyBtn.innerHTML = originalText;
-                        }
-                    } catch (error) {
-                        console.error('Error:', error);
-                        document.getElementById('emailVerifyError').innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>An error occurred. Please try again.</div>';
-                        verifyBtn.disabled = false;
-                        verifyBtn.innerHTML = originalText;
-                    }
-                }
-                
-            }
-        });
-
         async function sendOTP() {
             const phoneInput = document.getElementById('phoneInput');
             const phoneDigits = phoneInput.value.trim().replace(/\s/g, '');
@@ -1728,7 +1455,6 @@
             }
         }
 
-        // Auto-format phone input
         document.getElementById('phoneInput')?.addEventListener('input', function(e) {
             let value = this.value.replace(/\D/g, '');
             if (value.length > 10) value = value.substring(0, 10);
