@@ -175,8 +175,8 @@ if ($household_result && $household_result->num_rows > 0) {
           <div class="info-card-icon bg-success bg-opacity-10 text-success">
             <i class="bi bi-cloud-sun"></i>
           </div>
-          <h6 class="text-muted mb-1">Forecasted Cost</h6>
-          <h4 class="mb-0">₱<span id="forecastedCost">0</span></h4>
+          <h6 class="text-muted mb-1">Forecasted Monthly Consumption</h6>
+          <h4 class="mb-0"><span id="forecastedCost">0.0</span> <small class="text-muted">kWh</small></h4>
         </div>
       </div>
     </div>

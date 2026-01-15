@@ -1,21 +1,31 @@
 // General metrics and UI functionality
 function updateAllMetrics() {
   const totalKwh = appliances.reduce((sum, app) => sum + parseFloat(app.monthly_kwh || 0), 0);
-  const totalCost = totalKwh * currentRate;
   const dailyKwh = totalKwh / 30;
+  
+  // Get days in current month for accurate forecast
+  const now = new Date();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  
+  // Calculate forecasted monthly consumption: daily consumption * days in month
+  const forecastedMonthlyKwh = dailyKwh * daysInMonth;
+  const forecastedMonthlyCost = forecastedMonthlyKwh * currentRate;
+  const monthlyCost = forecastedMonthlyCost;
 
   const thisMonthKwhEl = document.getElementById('thisMonthKwh');
   const dailyConsumptionEl = document.getElementById('dailyConsumption');
   const monthlyCostEl = document.getElementById('monthlyCost');
   const forecastedCostEl = document.getElementById('forecastedCost');
 
-  if (thisMonthKwhEl) thisMonthKwhEl.textContent = totalKwh.toFixed(1);
+  // Set real-time consumption to 0 (will come from datasets)
+  if (thisMonthKwhEl) thisMonthKwhEl.textContent = '0.0';
   if (dailyConsumptionEl) dailyConsumptionEl.textContent = dailyKwh.toFixed(2);
-  if (monthlyCostEl) monthlyCostEl.textContent = Math.round(totalCost);
-  if (forecastedCostEl) forecastedCostEl.textContent = Math.round(totalCost);
+  if (monthlyCostEl) monthlyCostEl.textContent = Math.round(monthlyCost);
+  // Display forecasted monthly consumption in kWh (daily kWh * days in month)
+  if (forecastedCostEl) forecastedCostEl.textContent = forecastedMonthlyKwh.toFixed(2);
 
-  // Update budget status
-  updateBudgetStatus(totalCost);
+  // Update budget status using forecasted monthly cost
+  updateBudgetStatus(forecastedMonthlyCost);
 
   // Save electricity reading
   if (totalKwh > 0) {
