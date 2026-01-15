@@ -243,7 +243,7 @@ if ($household_result && $household_result->num_rows > 0) {
             </div>
 
             <div class="col-lg-8 d-flex flex-column">
-              <div id="applianceDisplayList" class="flex-grow-1" style="max-height: 280px; overflow-y: auto;">
+              <div id="applianceDisplayList" class="flex-grow-1" style="max-height: 375px; overflow-y: auto;">
                 <div class="text-center text-muted small py-3">
                   No appliances tracked yet. Add one to get started!
                 </div>
@@ -254,7 +254,7 @@ if ($household_result && $household_result->num_rows > 0) {
       </div>
 
       <div class="col-lg-3">
-        <div class="chart-container h-100 d-flex flex-column">
+        <div class="chart-container h-90 d-flex flex-column">
           <h5 class="mb-3"><i class="bi bi-bar-chart me-2"></i>Energy Overview</h5>
           <p class="text-muted">Predicted cost of your energy consumption</p>
           <div class="mt-4 flex-grow-1">
@@ -326,26 +326,31 @@ if ($household_result && $household_result->num_rows > 0) {
   </div>
 </div>
 
-    <!-- Delete Appliance Modal -->
-    <div class="modal fade" id="deleteApplianceModal" tabindex="-1" aria-labelledby="deleteApplianceModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header border-0 pb-0">
-            <h5 class="modal-title" id="deleteApplianceModalLabel">Remove Appliance</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body text-center">
-            <p class="mb-0">Are you sure you want to remove this appliance from your list?</p>
-          </div>
-          <div class="modal-footer justify-content-center border-0 pt-0">
-            <button type="button" class="btn btn-outline-secondary btn-sm px-4" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-danger btn-sm px-4" onclick="confirmDeleteAppliance()">
-              <i class="bi bi-trash me-1"></i>Delete
-            </button>
-          </div>
+ <!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center px-4 pb-4">
+        <div class="mb-3">
+          <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 3rem;"></i>
+        </div>
+        <h5 class="modal-title mb-2" id="deleteConfirmModalLabel">Delete Appliance</h5>
+        <p class="text-muted mb-4">Are you sure you want to delete this appliance? This action cannot be undone.</p>
+        <div class="d-grid gap-2">
+          <button type="button" class="btn btn-danger" onclick="confirmDeleteAppliance()">
+            <i class="bi bi-trash me-2"></i>Yes, Delete
+          </button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+
 
     <!-- Monthly Energy Forecast and Tips -->
     <div class="row g-4">
