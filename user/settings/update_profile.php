@@ -11,7 +11,6 @@
         exit;
     }
 
-    // Validate request
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         response(['success' => false, 'error' => 'Invalid request method']);
     }
@@ -37,141 +36,114 @@
     $password = $data['password'] ?? '';
     $confirm_password = $data['confirm_password'] ?? '';
 
-    // Validate required fields
     if (empty($fname) || empty($lname) || empty($email) || empty($city) || empty($barangay)) {
         response(['success' => false, 'error' => 'Please fill in all required fields.']);
     }
 
-    // Validate email format
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         response(['success' => false, 'error' => 'Please enter a valid email address.']);
     }
 
-    // Validate phone number if provided
     if (!empty($cp_number) && !preg_match('/^[0-9]{7,15}$/', $cp_number)) {
         response(['success' => false, 'error' => 'Please enter a valid phone number.']);
         exit;
     }
 
-    // Check if email is being changed and if new email already exists
     $user_id_escaped = mysqli_real_escape_string($conn, $user_id);
+    $email_escaped = mysqli_real_escape_string($conn, $email);
+
     $current_user_query = "SELECT email FROM USER WHERE user_id = '$user_id_escaped'";
     $current_user_result = executeQuery($current_user_query);
-    
+
     if (!$current_user_result || mysqli_num_rows($current_user_result) === 0) {
         response(['success' => false, 'error' => 'User not found.']);
     }
-    
+
     $current_user = mysqli_fetch_assoc($current_user_result);
     $current_email = $current_user['email'];
-    
+
     if ($email !== $current_email) {
-        $email_escaped = mysqli_real_escape_string($conn, $email);
         $check_email_query = "SELECT user_id FROM USER WHERE email = '$email_escaped' AND user_id != '$user_id_escaped'";
         $check_email_result = executeQuery($check_email_query);
-        
         if ($check_email_result && mysqli_num_rows($check_email_result) > 0) {
             response(['success' => false, 'error' => 'Email address is already registered.']);
-            exit;
         }
     }
 
-    // Validate provider only if provided and > 0
     if ($provider_id > 0) {
         $provider_id_escaped = mysqli_real_escape_string($conn, $provider_id);
         $check_provider_query = "SELECT provider_id FROM ELECTRICITY_PROVIDER WHERE provider_id = '$provider_id_escaped'";
         $check_provider_result = executeQuery($check_provider_query);
-        
         if (!$check_provider_result || mysqli_num_rows($check_provider_result) === 0) {
             response(['success' => false, 'error' => 'Invalid electricity provider.']);
-            exit;
         }
     }
 
-    // Validate password if provided
     if (!empty($password)) {
         $passwordValidation = validatePassword($password, $confirm_password);
         if (!$passwordValidation['valid']) {
             response(['success' => false, 'error' => $passwordValidation['error']]);
-            exit;
         }
     }
 
-    // Escape data
-    $fname = mysqli_real_escape_string($conn, $fname);
-    $lname = mysqli_real_escape_string($conn, $lname);
-    $email = mysqli_real_escape_string($conn, $email);
-    $cp_number = mysqli_real_escape_string($conn, $cp_number);
-    $city = mysqli_real_escape_string($conn, $city);
-    $barangay = mysqli_real_escape_string($conn, $barangay);
+    // Update user profile with conditional phone number update
+    $fname_escaped = mysqli_real_escape_string($conn, $fname);
+    $lname_escaped = mysqli_real_escape_string($conn, $lname);
+    $email_escaped = mysqli_real_escape_string($conn, $email);
+    $city_escaped = mysqli_real_escape_string($conn, $city);
+    $barangay_escaped = mysqli_real_escape_string($conn, $barangay);
 
-    // Update USER table
-    $update_user_query = "UPDATE USER SET fname = '$fname', lname = '$lname', email = '$email', cp_number = '$cp_number', city = '$city', barangay = '$barangay'";
-    
-    // Update cp_number if provided
+    $update_user_query = "UPDATE USER SET fname = '$fname_escaped', lname = '$lname_escaped', email = '$email_escaped', city = '$city_escaped', barangay = '$barangay_escaped'";
+
+    // Update cp_number only if provided
     if (!empty($cp_number)) {
-        $cp_number = mysqli_real_escape_string($conn, $cp_number);
-        $update_user_query .= ", cp_number = '$cp_number'";
+        $cp_number_escaped = mysqli_real_escape_string($conn, $cp_number);
+        $update_user_query .= ", cp_number = '$cp_number_escaped'";
     }
-    
+
     // Update password if provided
     if (!empty($password)) {
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-        $hashed_password = mysqli_real_escape_string($conn, $hashed_password);
-        $update_user_query .= ", password = '$hashed_password'";
-    }
-    
-    $update_user_query .= " WHERE user_id = '$user_id_escaped'";
-    
-    $update_user_result = executeQuery($update_user_query);
-    
-    if (!$update_user_result) {
-        response(['success' => false, 'error' => 'Failed to update profile.']);
-        exit;
+        $hashed_password_escaped = mysqli_real_escape_string($conn, $hashed_password);
+        $update_user_query .= ", password = '$hashed_password_escaped'";
     }
 
-    // Update HOUSEHOLD table only if provider_id is provided
+    $update_user_query .= " WHERE user_id = '$user_id_escaped'";
+
+    $update_user_result = executeQuery($update_user_query);
+
+    if (!$update_user_result) {
+        response(['success' => false, 'error' => 'Failed to update profile.']);
+    }
+
     if ($provider_id > 0) {
         $provider_id_escaped = mysqli_real_escape_string($conn, $provider_id);
         $check_household_query = "SELECT household_id FROM HOUSEHOLD WHERE user_id = '$user_id_escaped'";
         $check_household_result = executeQuery($check_household_query);
-        
+
         if ($check_household_result && mysqli_num_rows($check_household_result) > 0) {
             $household_row = mysqli_fetch_assoc($check_household_result);
-            $household_id = mysqli_real_escape_string($conn, $household_row['household_id']);
-            
-            $update_household_query = "UPDATE HOUSEHOLD SET provider_id = '$provider_id_escaped' WHERE household_id = '$household_id'";
+            $household_id_escaped = mysqli_real_escape_string($conn, $household_row['household_id']);
+            $update_household_query = "UPDATE HOUSEHOLD SET provider_id = '$provider_id_escaped' WHERE household_id = '$household_id_escaped'";
             $update_household_result = executeQuery($update_household_query);
-            
             if (!$update_household_result) {
                 response(['success' => false, 'error' => 'Failed to update household settings.']);
-                exit;
             }
         } else {
-            // Create household if it doesn't exist
             $insert_household_query = "INSERT INTO HOUSEHOLD (user_id, provider_id) VALUES ('$user_id_escaped', '$provider_id_escaped')";
             $insert_household_result = executeQuery($insert_household_query);
-            
             if (!$insert_household_result) {
                 response(['success' => false, 'error' => 'Failed to create household settings.']);
-                exit;
             }
         }
     }
 
     syncUserToAirlyft($user_id);
 
-    $raw_fname = $fname;
-    $raw_lname = $lname;
-    $raw_email = $email;
-    $raw_cp_number = $cp_number;
-
-    $_SESSION['fname'] = $raw_fname;
-    $_SESSION['lname'] = $raw_lname;
-    $_SESSION['email'] = $raw_email;
-    $_SESSION['cp_number'] = $raw_cp_number;
+    $_SESSION['fname'] = $fname;
+    $_SESSION['lname'] = $lname;
+    $_SESSION['email'] = $email;
+    $_SESSION['cp_number'] = $cp_number;
 
     response(['success' => true, 'message' => 'Profile updated successfully']);
-    
-    $conn->close();
 ?>

@@ -1,7 +1,7 @@
 <?php
     function sendSMS($phone, $message) {
 
-        $gateway_url = getenv('LOCAL_ADDRESS');
+        $gateway_url = getenv('SMS_LOCAL_ADDRESS');
         $username    = getenv('SMS_USERNAME');
         $password    = getenv('SMS_PASSWORD');
 

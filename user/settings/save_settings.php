@@ -50,6 +50,8 @@
     }
 
     $user_id_escaped = mysqli_real_escape_string($conn, $user_id);
+    $email_escaped = mysqli_real_escape_string($conn, $email);
+
     $current_user_query = "SELECT email FROM USER WHERE user_id = '$user_id_escaped'";
     $current_user_result = executeQuery($current_user_query);
 
@@ -61,7 +63,6 @@
     $current_email = $current_user['email'];
 
     if ($email !== $current_email) {
-        $email_escaped = mysqli_real_escape_string($conn, $email);
         $check_email_query = "SELECT user_id FROM USER WHERE email = '$email_escaped' AND user_id != '$user_id_escaped'";
         $check_email_result = executeQuery($check_email_query);
         if ($check_email_result && mysqli_num_rows($check_email_result) > 0) {
@@ -69,6 +70,7 @@
         }
     }
 
+    // Validate provider if provided
     if ($provider_id > 0) {
         $provider_id_escaped = mysqli_real_escape_string($conn, $provider_id);
         $check_provider_query = "SELECT provider_id FROM ELECTRICITY_PROVIDER WHERE provider_id = '$provider_id_escaped'";
@@ -78,6 +80,7 @@
         }
     }
 
+    // Validate password if provided
     if (!empty($password)) {
         $passwordValidation = validatePassword($password, $confirm_password);
         if (!$passwordValidation['valid']) {
@@ -85,27 +88,20 @@
         }
     }
 
-    $fname = mysqli_real_escape_string($conn, $fname);
-    $lname = mysqli_real_escape_string($conn, $lname);
-    $email = mysqli_real_escape_string($conn, $email);
-    $cp_number = mysqli_real_escape_string($conn, $cp_number);
-    $city = mysqli_real_escape_string($conn, $city);
-    $barangay = mysqli_real_escape_string($conn, $barangay);
+    // Update user profile
+    $fname_escaped = mysqli_real_escape_string($conn, $fname);
+    $lname_escaped = mysqli_real_escape_string($conn, $lname);
+    $email_escaped = mysqli_real_escape_string($conn, $email);
+    $cp_number_escaped = mysqli_real_escape_string($conn, $cp_number);
+    $city_escaped = mysqli_real_escape_string($conn, $city);
+    $barangay_escaped = mysqli_real_escape_string($conn, $barangay);
 
-    $update_user_query = "
-        UPDATE USER SET
-        fname = '$fname',
-        lname = '$lname',
-        email = '$email',
-        cp_number = '$cp_number',
-        city = '$city',
-        barangay = '$barangay'
-    ";
+    $update_user_query = "UPDATE USER SET fname = '$fname_escaped', lname = '$lname_escaped', email = '$email_escaped', cp_number = '$cp_number_escaped', city = '$city_escaped', barangay = '$barangay_escaped'";
 
     if (!empty($password)) {
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-        $hashed_password = mysqli_real_escape_string($conn, $hashed_password);
-        $update_user_query .= ", password = '$hashed_password'";
+        $hashed_password_escaped = mysqli_real_escape_string($conn, $hashed_password);
+        $update_user_query .= ", password = '$hashed_password_escaped'";
     }
 
     $update_user_query .= " WHERE user_id = '$user_id_escaped'";
@@ -115,8 +111,10 @@
         response(['success' => false, 'error' => 'Failed to update profile.']);
     }
 
+    // Sync to Airlyft
     syncUserToAirlyft($user_id);
 
+    // Update or create household
     if ($provider_id > 0) {
         $provider_id_escaped = mysqli_real_escape_string($conn, $provider_id);
         $check_household_query = "SELECT household_id FROM HOUSEHOLD WHERE user_id = '$user_id_escaped'";
@@ -124,8 +122,8 @@
 
         if ($check_household_result && mysqli_num_rows($check_household_result) > 0) {
             $household_row = mysqli_fetch_assoc($check_household_result);
-            $household_id = mysqli_real_escape_string($conn, $household_row['household_id']);
-            $update_household_query = "UPDATE HOUSEHOLD SET provider_id = '$provider_id_escaped' WHERE household_id = '$household_id'";
+            $household_id_escaped = mysqli_real_escape_string($conn, $household_row['household_id']);
+            $update_household_query = "UPDATE HOUSEHOLD SET provider_id = '$provider_id_escaped' WHERE household_id = '$household_id_escaped'";
             $update_household_result = executeQuery($update_household_query);
             if (!$update_household_result) {
                 response(['success' => false, 'error' => 'Failed to update household settings.']);
@@ -139,12 +137,11 @@
         }
     }
 
+    // Update session
     $_SESSION['fname'] = $fname;
     $_SESSION['lname'] = $lname;
     $_SESSION['email'] = $email;
     $_SESSION['cp_number'] = $cp_number;
 
     response(['success' => true, 'message' => 'Profile updated successfully']);
-
-    $conn->close();
 ?>

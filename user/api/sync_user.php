@@ -1,64 +1,55 @@
 <?php
     require_once __DIR__ . '/../../connect.php';
 
-    $api_key_env = getenv('GROUP2_API_KEY'); // make sure this matches Airlyft key
+    header("Content-Type: application/json");
 
+    // Validate API key
     $headers = getallheaders();
-    if (!isset($headers['X-API-KEY']) || $headers['X-API-KEY'] !== $api_key_env) {
+    if (!isset($headers['X-API-KEY']) || $headers['X-API-KEY'] !== getenv('GROUP2_API_KEY')) {
         http_response_code(401);
-        echo json_encode(['success' => false,'message'=>'Unauthorized']);
+        echo json_encode(['error' => 'Unauthorized']);
         exit;
     }
 
-    $input = file_get_contents('php://input');
-    $data = json_decode($input, true);
-
-    if (!$data) {
+    // Validate input
+    $data = json_decode(file_get_contents("php://input"), true);
+    if (!$data || !isset($data['email'])) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Invalid JSON']);
+        echo json_encode(['error' => 'Invalid payload']);
         exit;
     }
 
-    $fname    = $data['first_name'] ?? 'n/a';
-    $lname    = $data['last_name'] ?? 'n/a';
-    $cp_number= $data['phone'] ?? 'n/a';
-    $city     = 'n/a'; 
-    $barangay = 'n/a'; 
-    $email    = $data['email'] ?? 'n/a';
-    $password = $data['password'] ?? 'n/a'; 
-    $source   = $data['source_system'] ?? 'Airlyft';
+    // Extract and sanitize data
+    $fname  = $data['first_name'] ?? $data['fname'] ?? 'n/a';
+    $lname  = $data['last_name']  ?? $data['lname'] ?? 'n/a';
+    $email  = $data['email'];
+    $phone  = $data['phone'] ?? $data['cp_number'] ?? 'n/a';
+    $pass   = $data['password'] ?? 'n/a';
+    $source = $data['source_system'] ?? $data['origin_system'] ?? 'Airlyft';
 
-    $stmt_check = $conn->prepare("SELECT user_id, source_system FROM USER WHERE email=?");
-    $stmt_check->bind_param("s", $email);
-    $stmt_check->execute();
-    $result_check = $stmt_check->get_result();
+    // Escape all data once
+    $fname_escaped = mysqli_real_escape_string($conn, $fname);
+    $lname_escaped = mysqli_real_escape_string($conn, $lname);
+    $email_escaped = mysqli_real_escape_string($conn, $email);
+    $phone_escaped = mysqli_real_escape_string($conn, $phone);
+    $pass_escaped = mysqli_real_escape_string($conn, $pass);
+    $source_escaped = mysqli_real_escape_string($conn, $source);
 
-    if ($result_check->num_rows > 0) {
-        $existing = $result_check->fetch_assoc();
+    // Check if user exists
+    $check_query = "SELECT user_id FROM USER WHERE email='$email_escaped'";
+    $check_result = executeQuery($check_query);
 
-        if ($existing['source_system'] === 'Airlyft') {
-            $stmt_update = $conn->prepare("
-                UPDATE USER SET fname=?, lname=?, cp_number=?, city=?, barangay=?, password=?, source_system=? WHERE email=?
-            ");
-            $stmt_update->bind_param("ssssssss", $fname, $lname, $cp_number, $city, $barangay, $password, $source, $email);
-            $stmt_update->execute();
-            echo json_encode(['success' => true, 'message' => 'User updated successfully']);
-            exit;
-        } else {
-            echo json_encode(['success' => false, 'message' => 'User already exists from Electripid']);
-            exit;
-        }
-    }
+    if ($check_result && mysqli_num_rows($check_result) > 0) {
+        // Update existing user
+        $update_query = "UPDATE USER SET fname='$fname_escaped', lname='$lname_escaped', cp_number='$phone_escaped', password='$pass_escaped', source_system='$source_escaped' WHERE email='$email_escaped'";
+        executeQuery($update_query);
 
-    $stmt_insert = $conn->prepare("
-        INSERT INTO USER (fname, lname, email, cp_number, city, barangay, password, role, acc_status, source_system) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'user', 'active', ?)
-    ");
-    $stmt_insert->bind_param("ssssssss", $fname, $lname, $email, $cp_number, $city, $barangay, $password, $source);
-
-    if ($stmt_insert->execute()) {
-        echo json_encode(['success' => true, 'message' => 'User synced successfully']);
+        echo json_encode(['success' => true, 'message' => 'User updated']);
     } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to insert user']);
+        // Create new user
+        $insert_query = "INSERT INTO USER (fname, lname, email, cp_number, password, source_system, role) VALUES ('$fname_escaped', '$lname_escaped', '$email_escaped', '$phone_escaped', '$pass_escaped', '$source_escaped', 'user')";
+        executeQuery($insert_query);
+
+        echo json_encode(['success' => true, 'message' => 'User created']);
     }
-?>
+?>"
