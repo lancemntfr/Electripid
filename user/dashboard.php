@@ -284,41 +284,47 @@ if ($household_result && $household_result->num_rows > 0) {
       </div>
     </div>
 
-    <!-- Edit Appliance Modal -->
-    <div class="modal fade" id="editApplianceModal" tabindex="-1" aria-labelledby="editApplianceModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="editApplianceModalLabel">Edit Appliance</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <div class="mb-3">
-              <label class="form-label small text-muted">Device Name</label>
-              <input type="text" id="editDeviceName" class="form-control" placeholder="e.g. Aircon" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label small text-muted">Power (Watts)</label>
-              <input type="number" id="editDevicePower" class="form-control" placeholder="e.g. 1200" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label small text-muted">Hours per Day</label>
-              <input type="number" id="editDeviceHours" class="form-control" placeholder="e.g. 8" max="24" required oninput="validateEditHoursPerDay(this)">
-            </div>
-            <div class="mb-3">
-              <label class="form-label small text-muted">Usage per Week (Days)</label>
-              <input type="number" id="editDeviceUsagePerWeek" class="form-control" placeholder="e.g. 5" max="7" required oninput="validateEditUsagePerWeek(this)">
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" onclick="saveEditedAppliance()">
-              <i class="bi bi-check-circle me-1"></i>Save Changes
-            </button>
-          </div>
+<!-- Edit Appliance Modal -->
+<div class="modal fade" id="editApplianceModal" tabindex="-1" aria-labelledby="editApplianceModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editApplianceModalLabel">Edit Appliance</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label small text-muted">Device Name</label>
+          <input type="text" id="editDeviceName" class="form-control" placeholder="e.g. Aircon" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small text-muted">Power (Watts)</label>
+          <input type="number" id="editDevicePower" class="form-control" placeholder="e.g. 1200" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small text-muted">Hours per Day</label>
+          <input type="number" id="editDeviceHours" class="form-control" placeholder="e.g. 8" max="24" required oninput="validateEditHoursPerDay(this)">
+        </div>
+        <div class="mb-3">
+          <label class="form-label small text-muted">Usage per Week (Days)</label>
+          <input type="number" id="editDeviceUsagePerWeek" class="form-control" placeholder="e.g. 5" max="7" required oninput="validateEditUsagePerWeek(this)">
+        </div>
+      </div>
+      <div class="modal-footer d-flex justify-content-between">
+        <button type="button" class="btn btn-danger" onclick="deleteApplianceFromEdit()">
+          <i class="bi bi-trash me-1"></i>Delete
+        </button>
+        
+        <div>
+          <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" onclick="saveEditedAppliance()">
+            <i class="bi bi-check-circle me-1"></i>Save Changes
+          </button>
         </div>
       </div>
     </div>
+  </div>
+</div>
 
     <!-- Delete Appliance Modal -->
     <div class="modal fade" id="deleteApplianceModal" tabindex="-1" aria-labelledby="deleteApplianceModalLabel" aria-hidden="true">

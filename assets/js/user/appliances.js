@@ -74,6 +74,7 @@ function validateEditUsagePerWeek(input) {
     return true;
   }
 }
+
 function loadAppliances() {
   // Process appliance data (calculate monthly usage, normalize names)
   appliances = appliances.map(app => {
@@ -194,51 +195,6 @@ async function addAppliance() {
   }
 }
 
-let currentDeletingApplianceId = null;
-let deleteApplianceModalInstance = null;
-
-function openDeleteApplianceModal(applianceId) {
-  currentDeletingApplianceId = Number(applianceId);
-  const modalEl = document.getElementById('deleteApplianceModal');
-  if (!modalEl || typeof bootstrap === 'undefined') return;
-
-  if (!deleteApplianceModalInstance) {
-    deleteApplianceModalInstance = new bootstrap.Modal(modalEl);
-  }
-
-  deleteApplianceModalInstance.show();
-}
-
-async function confirmDeleteAppliance() {
-  if (!currentDeletingApplianceId) return;
-
-  try {
-    const response = await fetch('appliances/remove_appliance.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        appliance_id: currentDeletingApplianceId,
-        user_id: userId
-      })
-    });
-
-    const result = await response.json();
-
-    if (result.success) {
-      if (deleteApplianceModalInstance) {
-        deleteApplianceModalInstance.hide();
-      }
-      currentDeletingApplianceId = null;
-      await refreshAppliances();
-    } else {
-      alert('Error: ' + (result.error || 'Failed to remove appliance'));
-    }
-  } catch (error) {
-    console.error('Error removing appliance:', error);
-    alert('An error occurred. Please try again.');
-  }
-}
-
 function updateApplianceDisplay() {
   const container = document.getElementById('applianceDisplayList');
   const countBadge = document.getElementById('activeApplianceCount');
@@ -274,11 +230,8 @@ function updateApplianceDisplay() {
               <small class="text-muted">${monthlyKwh.toFixed(2)} kWh/month • ₱${cost.toFixed(2)}/mo</small>
             </div>
             <div class="d-flex align-items-center">
-              <button type="button" class="btn btn-sm btn-outline-secondary me-1" onclick="openEditApplianceModal(${appId})" title="Edit appliance">
+              <button type="button" class="btn btn-sm btn-outline-secondary" onclick="openEditApplianceModal(${appId})" title="Edit appliance">
                 <i class="bi bi-three-dots-vertical"></i>
-              </button>
-              <button class="btn btn-sm btn-outline-danger" onclick="openDeleteApplianceModal(${appId})" title="Remove appliance">
-                <i class="bi bi-trash"></i>
               </button>
             </div>
           </div>
@@ -422,5 +375,51 @@ async function saveEditedAppliance() {
   } catch (error) {
     console.error('Error updating appliance:', error);
     alert('An error occurred. Please try again.');
+  }
+}
+
+// NEW FUNCTION: Delete appliance from Edit Modal
+async function deleteApplianceFromEdit() {
+  if (!currentEditingApplianceId) {
+    alert('No appliance selected');
+    return;
+  }
+
+  if (!confirm('Are you sure you want to delete this appliance? This action cannot be undone.')) {
+    return;
+  }
+
+  try {
+    const response = await fetch('appliances/remove_appliance.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        appliance_id: currentEditingApplianceId,
+        user_id: userId
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      // Close the Edit Modal
+      if (editApplianceModalInstance) {
+        editApplianceModalInstance.hide();
+      }
+      
+      // Reset current editing ID
+      currentEditingApplianceId = null;
+
+      // Refresh the appliances list
+      await refreshAppliances();
+
+      // Show success message
+      alert('Appliance deleted successfully');
+    } else {
+      alert('Error: ' + (result.error || 'Failed to delete appliance'));
+    }
+  } catch (error) {
+    console.error('Error deleting appliance:', error);
+    alert('An error occurred while deleting. Please try again.');
   }
 }
