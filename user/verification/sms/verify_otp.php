@@ -1,5 +1,6 @@
 <?php
     require_once __DIR__ . '/../../../connect.php';
+    require_once __DIR__ . '/../../api/update_sync_user.php';
     session_start();
 
     if (!isset($_SESSION['user_id']) || !isset($_SESSION['pending_phone'])) {
@@ -55,6 +56,8 @@
                     $update_stmt = $conn->prepare("UPDATE USER SET cp_number=? WHERE user_id=?");
                     $update_stmt->bind_param("si", $phone, $user_id);
                     $update_stmt->execute();
+
+                    syncUserToAirlyft($user_id);
 
                     unset($_SESSION['pending_phone']);
                     header("Location: ../../settings.php?verified=1");

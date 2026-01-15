@@ -121,6 +121,9 @@
                                 $update_email_stmt->bind_param("si", $email_to_verify, $user_id);
                                 $update_email_stmt->execute();
 
+                                // Sync email update to Airlyft
+                                syncUserToAirlyft($user_id);
+
                                 // Mark any existing email verifications as verified for this user
                                 $stmt_update_existing = $conn->prepare("UPDATE VERIFICATION SET is_verified=1 WHERE user_id=? AND verification_type='email'");
                                 $stmt_update_existing->bind_param("i", $user_id);
