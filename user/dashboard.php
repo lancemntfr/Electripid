@@ -365,57 +365,31 @@ if ($household_result && $household_result->num_rows > 0) {
     </div>
   </div>
 
-  <!-- Donation Modal -->
-<div id="donationModal"
-     class="position-fixed top-0 start-0 end-0 bottom-0 d-flex align-items-center justify-content-center"
-     style="display:none; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 1001;">
-
-  <div class="bg-white rounded-4 shadow-lg"
-       style="width: 92%; max-width: 480px;">
-
-    <!-- Header -->
-    <div class="px-4 pt-4 pb-3 border-bottom">
-      <div class="d-flex justify-content-between align-items-center">
-        <h5 class="fw-semibold mb-0">
-          <i class="bi bi-heart-fill text-success me-2"></i>
-          Support Electripid
-        </h5>
-        <button type="button"
-                class="btn-close"
-                onclick="closeDonationModal()"></button>
+ <!-- Donation Modal -->
+  <div id="donationModal" class="modal-overlay position-fixed top-0 start-0 end-0 bottom-0 align-items-center justify-content-center" style="display: none; z-index: 1001;">
+    <div class="modal-content bg-white rounded-4" style="width: 90%; max-width: 500px;">
+      <div class="modal-header d-flex justify-content-between align-items-center p-4 border-bottom">
+        <h3 class="mb-0">💚 Support Electripid</h3>
+        <button class="modal-close border-0 bg-transparent rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" onclick="closeDonationModal()">&times;</button>
       </div>
-      <p class="text-muted small mt-2 mb-0">
-        Help us improve forecasting accuracy and user experience.
-      </p>
-    </div>
+      <div class="modal-body p-4">
+        <p style="color: #64748b; margin-bottom: 20px;">Help us improve Electripid! Your donation will fund new features, better forecasting, and enhanced user experience.</p>
 
-    <!-- Body -->
-    <div class="p-4">
+        <div class="mb-4">
+          <label class="small text-secondary mb-2 d-block">Custom Amount (₱)</label>
+          <input type="number" id="customAmount" class="form-control" placeholder="Enter custom amount" min="10">
+        </div>
 
-      <!-- Custom Amount -->
-      <div class="mb-4">
-        <label class="small text-muted mb-1 d-block">Custom amount (PHP)</label>
-        <input type="number"
-               id="customAmount"
-               class="form-control form-control-lg"
-               min="10"
-               placeholder="Enter amount (min ₱10)"
-               value="100">
-      </div>
 
-      <!-- PayPal Button -->
-      <div class="border rounded-3 p-3 bg-light">
         <div id="paypal-button-container"></div>
-      </div>
 
-      <!-- Footer Note -->
-      <p class="small text-muted text-center mt-3 mb-0">
-        Payments are securely processed via PayPal.
-      </p>
+
+        <p class="small text-secondary text-center mt-4 mb-0">
+          🔒 Secure payment via PayPal • Your support means everything!
+        </p>
+      </div>
     </div>
   </div>
-</div>
-
 
   <!-- Chatbot Widget -->
   <div id="chatbotWidget" class="chatbot-widget" style="display: none;">
