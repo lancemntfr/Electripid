@@ -108,6 +108,12 @@
     // Update USER table
     $update_user_query = "UPDATE USER SET fname = '$fname', lname = '$lname', email = '$email', cp_number = '$cp_number', city = '$city', barangay = '$barangay'";
     
+    // Update cp_number if provided
+    if (!empty($cp_number)) {
+        $cp_number = mysqli_real_escape_string($conn, $cp_number);
+        $update_user_query .= ", cp_number = '$cp_number'";
+    }
+    
     // Update password if provided
     if (!empty($password)) {
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
