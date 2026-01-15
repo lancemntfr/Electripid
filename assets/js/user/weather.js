@@ -1,61 +1,78 @@
 // Weather API functionality
-async function fetchWeather() {
+async function fetchWeather(city) {
   try {
     // Show loading state
     document.getElementById('weatherTemp').textContent = 'Loading...';
     document.getElementById('weatherCondition').textContent = 'Loading...';
+    document.getElementById('weatherHumidity').textContent = '--';
+    document.getElementById('weatherWind').textContent = '--';
 
-    const response = await fetch(`api_weather.php?city=${encodeURIComponent(currentLocation)}`);
+    const response = await fetch(`../user/api_weather.php?city=${encodeURIComponent(city)}`);
     const result = await response.json();
 
-    if (result.success) {
-      updateCurrentWeather(result.data);
-      updateWeatherForecast(result.data);
-      console.log('Weather loaded for:', currentLocation);
-    } else {
-      console.error('Weather API error:', result.error);
-      // Show fallback message
+    if (!result.success) {
+      console.error('Weather API error:', result.message || 'Unknown error');
+      // Show fallback
       document.getElementById('weatherTemp').textContent = '--°C';
       document.getElementById('weatherCondition').textContent = 'Weather unavailable';
-      document.getElementById('weatherHumidity').textContent = '--';
-      document.getElementById('weatherWind').textContent = '--';
+      return;
     }
-  } catch (error) {
-    console.error('Error fetching weather:', error);
+
+    // Update current weather
+    const current = result.data.current;
+    document.getElementById('weatherLocation').textContent = current.location || city;
+    document.getElementById('weatherTemp').textContent = current.temp || '--°C';
+    document.getElementById('weatherCondition').textContent = current.condition || '--';
+
+    document.getElementById('weatherHumidity').textContent =
+      current.humidity ? current.humidity.replace('%', '') : '--';
+
+    document.getElementById('weatherWind').textContent =
+      current.wind ? current.wind.replace(' km/h', '') : '--';
+
+    const iconImg = document.querySelector('#weatherIcon img');
+    if (current.icon) {
+      iconImg.src = current.icon;
+      iconImg.alt = current.condition || 'Weather Icon';
+    }
+
+    // Update forecast
+    const forecastContainer = document.getElementById('weatherForecast');
+    forecastContainer.innerHTML = '';
+
+    if (result.data.forecast && result.data.forecast.length > 0) {
+      result.data.forecast.forEach(day => {
+        const el = document.createElement('div');
+        el.className = 'text-center small forecast-day';
+
+        // Handle undefined temps
+        const tempMax = day.temp_max !== undefined ? day.temp_max : '--';
+        const tempMin = day.temp_min !== undefined ? day.temp_min : '--';
+
+        el.innerHTML = `
+          <div class="fw-semibold">${day.day || ''}</div>
+          <img src="${day.icon || ''}" width="40" alt="${day.condition || ''}">
+          <div>${tempMax}° / ${tempMin}°</div>
+        `;
+        forecastContainer.appendChild(el);
+      });
+    }
+
+  } catch (err) {
+    console.error('Weather JS error:', err);
     // Show error state
     document.getElementById('weatherTemp').textContent = '--°C';
     document.getElementById('weatherCondition').textContent = 'Connection error';
     document.getElementById('weatherHumidity').textContent = '--';
     document.getElementById('weatherWind').textContent = '--';
+    document.getElementById('weatherForecast').innerHTML = '';
   }
 }
 
-function updateCurrentWeather(data) {
-  document.getElementById('weatherTemp').textContent = data.current.temp;
-  document.getElementById('weatherCondition').textContent = data.current.condition;
-  document.getElementById('weatherHumidity').textContent = data.current.humidity;
-  document.getElementById('weatherWind').textContent = data.current.wind;
-
-  const weatherIcon = document.querySelector('#weatherIcon img');
-  weatherIcon.src = data.current.icon;
-  if (data.current.filter) {
-    weatherIcon.style.filter = data.current.filter;
+// Auto-load weather on page load
+document.addEventListener('DOMContentLoaded', () => {
+  // currentLocation is defined in your dashboard.php JS
+  if (typeof currentLocation !== 'undefined') {
+    fetchWeather(currentLocation);
   }
-}
-
-function updateWeatherForecast(data) {
-  const forecastContainer = document.getElementById('weatherForecast');
-  forecastContainer.innerHTML = '';
-
-  data.forecast.forEach(day => {
-    const dayDiv = document.createElement('div');
-    dayDiv.classList.add('forecast-day');
-    const imgStyle = day.filter ? `style="filter: ${day.filter};"` : '';
-    dayDiv.innerHTML = `
-      <div class="fw-bold">${day.day}</div>
-      <img src="${day.icon}" alt="icon" ${imgStyle}>
-      <div>${day.temp}°C</div>
-    `;
-    forecastContainer.appendChild(dayDiv);
-  });
-}
+});
