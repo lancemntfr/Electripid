@@ -793,7 +793,7 @@ if ($household_result && $household_result->num_rows > 0) {
 
   <!-- Modular JavaScript Files -->
   <script src="../assets/js/user/appliances.js"></script>
-  <script src="../assets/js/user/donations.js"></script>
+  <script src="../assets/js/user/donations.js?v=2"></script>
   <script src="../assets/js/user/chatbot.js"></script>
   <script src="../assets/js/user/charts.js"></script>
   <script src="../assets/js/user/metrics.js"></script>

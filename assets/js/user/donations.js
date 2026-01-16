@@ -1,3 +1,4 @@
+
 // Donation and PayPal functionality
 function openDonationModal() {
   const modal = document.getElementById('donationModal');
@@ -28,7 +29,7 @@ function selectAmount(amount, el) {
 document.getElementById('customAmount').addEventListener('input', function() {
   const value = Number(this.value);
 
-  if (value >= 10) {
+  if (value >= 1) {
     selectedDonationAmount = value;
 
     document.querySelectorAll('.donation-btn')
@@ -42,12 +43,12 @@ function getDonationAmount() {
   const customAmountInput = document.getElementById('customAmount');
   const typedAmount = Number(customAmountInput.value);
 
-  if (!isNaN(typedAmount) && typedAmount >= 10) {
+  if (!isNaN(typedAmount) && typedAmount >= 1) {
     selectedDonationAmount = typedAmount;
     return typedAmount;
   }
 
-  if (selectedDonationAmount && selectedDonationAmount >= 10) {
+  if (selectedDonationAmount && selectedDonationAmount >= 1) {
     return Number(selectedDonationAmount);
   }
 
@@ -61,9 +62,9 @@ function renderPayPalButtons() {
   const phpAmount = getDonationAmount();
 
   // HARD VALIDATION
-  if (!phpAmount || isNaN(phpAmount) || phpAmount < 10) {
+  if (!phpAmount || isNaN(phpAmount) || phpAmount < 1) {
     container.innerHTML =
-      '<div class="alert alert-warning">Minimum donation is ₱10.</div>';
+      '<div class="alert alert-warning">Please enter a donation amount.</div>';
     return;
   }
 

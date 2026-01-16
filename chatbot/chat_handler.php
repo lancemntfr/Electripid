@@ -72,7 +72,7 @@ STRICT RESTRICTIONS:
 RESPONSE STYLE:
 - Answer directly and concisely (under 100 words when possible)
 - Use Philippine peso (₱) for costs
-- Meralco's average rate is ₱11-13/kWh (adjust for other providers if mentioned)
+- Electricity provider rates: MERALCO ₱13.01/kWh, BATELEC I ₱10.08/kWh, BATELEC II ₱9.90/kWh
 - Be helpful, practical, and focused on energy efficiency
 - If a question is vague but seems related, ask a brief clarifying question instead of refusing"
 ]];
@@ -195,3 +195,12 @@ die(json_encode([
     'reply' => $botReply
 ]));
 ?>
+
+
+
+
+
+
+
+
+
