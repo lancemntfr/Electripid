@@ -177,7 +177,7 @@ async function saveBudgetNotification(title, message) {
     // Check if notification already exists (to avoid duplicates)
     const checkResponse = await fetch('api/check_budget_notification.php');
     const checkResult = await checkResponse.json();
-    
+
     // Only save if there's no unread notification
     if (checkResult.success && !checkResult.has_unread) {
       await fetch('api/save_notification.php', {
@@ -191,9 +191,55 @@ async function saveBudgetNotification(title, message) {
           message: message
         })
       });
+
+      // Also trigger email/SMS alerts if budget is exceeded
+      if (title.includes('Alert') || title.includes('Warning')) {
+        await triggerBudgetAlerts(title, message);
+      }
     }
   } catch (error) {
     console.error('Error saving budget notification:', error);
+  }
+}
+
+async function triggerBudgetAlerts(title, message) {
+  try {
+    // Get current budget data for the alert
+    const budgetStatusBadge = document.getElementById('budgetStatusBadge');
+    const budgetStatusText = document.getElementById('budgetStatusText');
+
+    let budgetData = {};
+    if (budgetStatusBadge && budgetStatusText) {
+      const budgetText = document.getElementById('monthlyBudget')?.textContent?.replace('₱', '').replace(/,/g, '').trim();
+      const costText = document.getElementById('monthlyCost')?.textContent?.replace(/₱/g, '').replace(/,/g, '').trim();
+
+      budgetData = {
+        monthly_budget: parseFloat(budgetText) || 0,
+        current_cost: parseFloat(costText) || 0,
+        exceeded_amount: 0,
+        percentage: 0
+      };
+
+      if (budgetData.monthly_budget > 0 && budgetData.current_cost > budgetData.monthly_budget) {
+        budgetData.exceeded_amount = budgetData.current_cost - budgetData.monthly_budget;
+        budgetData.percentage = ((budgetData.current_cost / budgetData.monthly_budget) * 100);
+      }
+    }
+
+    const alertType = title.includes('Alert') ? 'alert' : 'warning';
+
+    await fetch('notification/trigger_budget_alert.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        alert_type: alertType,
+        budget_data: budgetData,
+        title: title,
+        message: message
+      })
+    });
+  } catch (error) {
+    console.error('Error triggering budget alerts:', error);
   }
 }
 
