@@ -190,6 +190,11 @@ async function addAppliance() {
     usageInput.setCustomValidity('');
 
     await refreshAppliances();
+    
+    // Update energy tips after adding appliance
+    if (typeof updateEnergyTips === 'function') {
+      updateEnergyTips();
+    }
   } else {
     alert('Error: ' + (result.error || 'Failed to add appliance'));
   }
@@ -369,6 +374,11 @@ async function saveEditedAppliance() {
       usageInput.setCustomValidity('');
       
       await refreshAppliances();
+      
+      // Update energy tips after editing appliance
+      if (typeof updateEnergyTips === 'function') {
+        updateEnergyTips();
+      }
     } else {
       alert('Error: ' + (result.error || 'Failed to update appliance'));
     }
@@ -473,6 +483,12 @@ async function confirmDeleteAppliance() {
       // Small delay to ensure modal is fully closed before refreshing
       setTimeout(async () => {
         await refreshAppliances();
+        
+        // Update energy tips after deleting appliance
+        if (typeof updateEnergyTips === 'function') {
+          updateEnergyTips();
+        }
+        
         console.log('Appliance deleted successfully');
       }, 300);
     } else {

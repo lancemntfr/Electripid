@@ -27,6 +27,9 @@ function updateAllMetrics() {
   // Update budget status using forecasted monthly cost
   updateBudgetStatus(forecastedMonthlyCost);
 
+  // Update energy tips based on current status
+  updateEnergyTips();
+
   // Save electricity reading
   if (totalKwh > 0) {
     saveReading(dailyKwh, totalKwh);
@@ -309,4 +312,195 @@ async function saveSettings() {
   } catch (error) {
     console.error('Error saving settings:', error);
   }
+}
+
+// Energy Tips and Recommendations System
+function updateEnergyTips() {
+  const tipsContent = document.getElementById('energyTipsContent');
+  if (!tipsContent) return;
+
+  // Calculate current metrics
+  const totalKwh = appliances.reduce((sum, app) => sum + parseFloat(app.monthly_kwh || 0), 0);
+  const dailyKwh = totalKwh / 30;
+  const now = new Date();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const monthlyKwh = dailyKwh * daysInMonth;
+  const monthlyCost = monthlyKwh * currentRate;
+
+  // Get budget from global variable or DOM
+  let budget = monthlyBudget;
+  if (!budget || budget === 0) {
+    const budgetEl = document.getElementById('monthlyBudget');
+    if (budgetEl) {
+      const budgetText = budgetEl.textContent.replace('₱', '').replace(/,/g, '').trim();
+      budget = parseFloat(budgetText) || 0;
+    }
+  }
+
+  const budgetExceeded = budget > 0 && monthlyCost > budget;
+  const percentageOverBudget = budgetExceeded 
+    ? ((monthlyCost - budget) / budget * 100).toFixed(1)
+    : 0;
+
+  // Clear existing content
+  tipsContent.innerHTML = '';
+
+  if (appliances.length === 0) {
+    // No appliances tracked
+    tipsContent.innerHTML = `
+      <div class="text-center text-muted py-4">
+        <i class="bi bi-lightbulb" style="font-size: 3rem; opacity: 0.3;"></i>
+        <p class="mt-3 mb-0">Add appliances to receive personalized energy-saving tips and recommendations.</p>
+      </div>
+    `;
+    tipsContent.style.display = 'block';
+    return;
+  }
+
+  // Don't show tips if there's no budget set or monthly cost is 0
+  if (!budget || budget === 0 || monthlyCost === 0) {
+    tipsContent.innerHTML = `
+      <div class="text-center text-muted py-4">
+        <i class="bi bi-info-circle" style="font-size: 3rem; opacity: 0.3;"></i>
+        <p class="mt-3 mb-0">Set a monthly budget in Settings to receive personalized energy-saving tips.</p>
+      </div>
+    `;
+    tipsContent.style.display = 'block';
+    return;
+  }
+
+  // Generate personalized tips based on budget status
+  let tipsHTML = '';
+
+  if (budgetExceeded) {
+    // OVER BUDGET - Show actionable tips without the alert message
+    // Find high-consumption appliances
+    const applianceConsumption = appliances.map(app => {
+      const monthlyKwh = parseFloat(app.monthly_kwh || 0);
+      const monthlyCost = monthlyKwh * currentRate;
+      return { ...app, monthlyKwh, monthlyCost };
+    }).sort((a, b) => b.monthlyCost - a.monthlyCost);
+
+    // Tip 1: Reduce usage of top energy consumers
+    if (applianceConsumption.length > 0) {
+      const topConsumer = applianceConsumption[0];
+      const appName = topConsumer.name || topConsumer.appliance_name || 'Unknown';
+      tipsHTML += `
+        <div class="alert alert-warning mb-3">
+          <i class="bi bi-arrow-down-circle me-2"></i>
+          <strong>Reduce High Consumption:</strong>
+          <p class="mb-0 mt-1 small">Your <strong>${appName}</strong> consumes ₱${topConsumer.monthlyCost.toFixed(2)}/month. Try reducing usage by 2 hours per day to save approximately ₱${(topConsumer.monthlyCost * 0.25).toFixed(2)}/month.</p>
+        </div>
+      `;
+    }
+
+    // Tip 2: Optimize usage schedule
+    tipsHTML += `
+      <div class="alert alert-info mb-3">
+        <i class="bi bi-clock-history me-2"></i>
+        <strong>Optimize Usage Schedule:</strong>
+        <p class="mb-0 mt-1 small">Run high-power appliances during off-peak hours (typically 10 PM - 6 AM) when electricity rates may be lower with some providers.</p>
+      </div>
+    `;
+
+    // Tip 3: Check for energy vampires
+    tipsHTML += `
+      <div class="alert alert-warning mb-3">
+        <i class="bi bi-plug me-2"></i>
+        <strong>Eliminate Energy Vampires:</strong>
+        <p class="mb-0 mt-1 small">Unplug devices when not in use. Standby power can account for 5-10% of your electricity bill.</p>
+      </div>
+    `;
+
+  } else if (monthlyCost > budget * 0.8 && budget > 0) {
+    // APPROACHING BUDGET - Show caution message
+    tipsHTML += `
+      <div class="alert alert-warning mb-3" style="border-left: 4px solid #ffc107;">
+        <div class="d-flex align-items-start gap-2">
+          <i class="bi bi-exclamation-circle" style="font-size: 1.2rem;"></i>
+          <div>
+            <strong>Approaching Budget Limit</strong>
+            <p class="mb-0 mt-1">You're using ${((monthlyCost / budget) * 100).toFixed(0)}% of your monthly budget. Consider these tips to stay within budget:</p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    tipsHTML += `
+      <div class="alert alert-info mb-3">
+        <i class="bi bi-thermometer-half me-2"></i>
+        <strong>Smart Temperature Control:</strong>
+        <p class="mb-0 mt-1 small">Set air conditioners to 24-26°C for optimal comfort and efficiency. Each degree lower can increase consumption by 5-8%.</p>
+      </div>
+    `;
+
+    tipsHTML += `
+      <div class="alert alert-info mb-3">
+        <i class="bi bi-lightbulb me-2"></i>
+        <strong>LED Lighting:</strong>
+        <p class="mb-0 mt-1 small">Replace incandescent bulbs with LED bulbs to save up to 75% on lighting costs.</p>
+      </div>
+    `;
+
+  } else if (budget > 0) {
+    // WITHIN BUDGET - Show positive reinforcement and general tips
+    tipsHTML += `
+      <div class="alert alert-success mb-3" style="border-left: 4px solid #28a745;">
+        <div class="d-flex align-items-start gap-2">
+          <i class="bi bi-check-circle-fill" style="font-size: 1.2rem;"></i>
+          <div>
+            <strong>Great Job! 🎉</strong>
+            <p class="mb-0 mt-1">You're managing your energy efficiently. Keep up these good habits!</p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    tipsHTML += `
+      <div class="alert alert-info mb-3">
+        <i class="bi bi-sun me-2"></i>
+        <strong>Natural Resources:</strong>
+        <p class="mb-0 mt-1 small">Maximize natural light during daytime and ventilation to reduce reliance on artificial lighting and cooling.</p>
+      </div>
+    `;
+
+    tipsHTML += `
+      <div class="alert alert-info mb-3">
+        <i class="bi bi-stars me-2"></i>
+        <strong>Maintenance Tip:</strong>
+        <p class="mb-0 mt-1 small">Clean air conditioner filters monthly and maintain appliances regularly for optimal efficiency.</p>
+      </div>
+    `;
+  }
+
+  // Always show a general energy-saving tip
+  const generalTips = [
+    {
+      icon: 'bi-water',
+      title: 'Water Heating Savings',
+      text: 'Lower your water heater temperature to 50°C to save energy without sacrificing comfort.'
+    },
+    {
+      icon: 'bi-device-ssd',
+      title: 'Appliance Efficiency',
+      text: 'Choose appliances with higher energy efficiency ratings when replacing old devices.'
+    },
+    {
+      icon: 'bi-wind',
+      title: 'Natural Cooling',
+      text: 'Use electric fans before air conditioning. Fans use 98% less energy than AC units.'
+    }
+  ];
+
+  const randomTip = generalTips[Math.floor(Math.random() * generalTips.length)];
+  tipsHTML += `
+    <div class="alert alert-light mb-0 border">
+      <i class="bi ${randomTip.icon} me-2 text-primary"></i>
+      <strong>${randomTip.title}:</strong>
+      <p class="mb-0 mt-1 small">${randomTip.text}</p>
+    </div>
+  `;
+
+  tipsContent.innerHTML = tipsHTML;
+  tipsContent.style.display = 'block';
 }
