@@ -606,12 +606,12 @@ if ($household_result && $household_result->num_rows > 0) {
   background-color: #dc3545;
   color: white;
   border-radius: 50%;
-  width: 10px;
-  height: 10px;
+  width: 14px;
+  height: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.3rem;
+  font-size: 0.5rem;
   font-weight: bold;
   border: 2px solid white;
   z-index: 10;

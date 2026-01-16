@@ -2,6 +2,7 @@
     session_start();
     header('Content-Type: application/json');
     require_once __DIR__ . '/../../connect.php';
+    require_once __DIR__ . '/../notification/send_email_alert.php';
 
     if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_SESSION['user_id'])) {
         echo json_encode(['success' => false, 'error' => 'Invalid request']);
@@ -62,23 +63,26 @@
     $conn->close();
 
 function checkAndTriggerBudgetNotification($household_id, $conn) {
-    // Single optimized query to get budget and total cost
-    $combined_query = "
-        SELECT h.monthly_budget, h.user_id, COALESCE(SUM(a.estimated_cost), 0) as total_monthly_cost
+    // Optimized query to get budget and total cost in one call
+    $household_id_escaped = mysqli_real_escape_string($conn, $household_id);
+
+    $query = "
+        SELECT h.monthly_budget, h.user_id,
+               COALESCE(SUM(a.estimated_cost), 0) as total_monthly_cost
         FROM HOUSEHOLD h
         LEFT JOIN APPLIANCE a ON h.household_id = a.household_id
-        WHERE h.household_id = '$household_id'
+        WHERE h.household_id = '$household_id_escaped'
         GROUP BY h.household_id, h.monthly_budget, h.user_id
     ";
 
-    $result = executeQuery($combined_query);
+    $result = executeQuery($query);
     if (!$result || mysqli_num_rows($result) === 0) {
         return;
     }
 
     $row = mysqli_fetch_assoc($result);
     $monthly_budget = floatval($row['monthly_budget']);
-    $user_id = $row['user_id'];
+    $user_id = intval($row['user_id']);
     $total_monthly_cost = floatval($row['total_monthly_cost']);
 
     // Early return if no valid budget
@@ -88,18 +92,18 @@ function checkAndTriggerBudgetNotification($household_id, $conn) {
 
     $difference = $total_monthly_cost - $monthly_budget;
 
+    // Only trigger notification if budget is exceeded
     if ($difference > 0) {
         $percentage = ($total_monthly_cost / $monthly_budget) * 100;
-        $difference_abs = $difference;
-
-        // Set session for notification context
-        $_SESSION['user_id'] = $user_id;
-
         $is_warning = $difference <= $monthly_budget * 0.1;
+
         $title = $is_warning ? 'Budget Warning' : 'Budget Alert';
         $message = $is_warning
-            ? "You have exceeded your budget by ₱" . number_format($difference_abs, 2) . ". Consider reducing appliance usage or adjusting your budget in Settings."
-            : "You have significantly exceeded your budget by ₱" . number_format($difference_abs, 2) . " (" . number_format($percentage, 1) . "% over). Please reduce appliance usage or increase your budget in Settings to avoid unexpected costs.";
+            ? "You have exceeded your budget by ₱" . number_format($difference, 2) . ". Consider reducing appliance usage or adjusting your budget in Settings."
+            : "You have significantly exceeded your budget by ₱" . number_format($difference, 2) . " (" . number_format($percentage, 1) . "% over). Please reduce appliance usage or increase your budget in Settings to avoid unexpected costs.";
+
+        // Set session context for background notification processing
+        $_SESSION['user_id'] = $user_id;
 
         createImmediateBudgetNotification($user_id, $title, $message, $conn);
     }
@@ -129,28 +133,70 @@ function createImmediateBudgetNotification($user_id, $title, $message, $conn) {
 
     // Only trigger external notifications if we actually inserted a new notification
     if ($insert_result && mysqli_affected_rows($conn) > 0) {
-        // Trigger external notifications (email/SMS) if preferences allow
+        // Schedule external notifications to run asynchronously after response is sent
         $alert_type = strpos($title, 'Alert') !== false ? 'alert' : 'warning';
 
-        $budget_data = [
-            'monthly_budget' => 0,
-            'current_cost' => 0,
-            'exceeded_amount' => 0,
-            'percentage' => 0
-        ];
-
-        $trigger_data = [
+        // Store notification data for background processing
+        $notification_data = [
+            'user_id' => $user_id,
             'alert_type' => $alert_type,
-            'budget_data' => $budget_data,
             'title' => $title,
-            'message' => $message
+            'message' => $message,
+            'budget_data' => [
+                'monthly_budget' => 0,
+                'current_cost' => 0,
+                'exceeded_amount' => 0,
+                'percentage' => 0
+            ]
         ];
 
-        // Simulate POST request to trigger function
-        $_POST = $trigger_data;
-        ob_start();
-        include __DIR__ . '/../notification/trigger_budget_alert.php';
-        ob_end_clean();
+        // Register shutdown function to process notifications after response is sent
+        register_shutdown_function('sendBudgetNotificationsAsync', $notification_data);
+    }
+}
+
+function sendBudgetNotificationsAsync($notification_data) {
+    // Disconnect from main database connection to avoid conflicts
+    if (isset($GLOBALS['conn'])) {
+        $GLOBALS['conn']->close();
+        unset($GLOBALS['conn']);
+    }
+
+    try {
+        // Start fresh database connection for background processing
+        $bg_conn = new mysqli("localhost", "root", "", "electripid");
+        if ($bg_conn->connect_error) {
+            throw new Exception("Database connection failed: " . $bg_conn->connect_error);
+        }
+        $bg_conn->set_charset("utf8mb4");
+
+        // Set global connection for notification functions
+        $GLOBALS['conn'] = $bg_conn;
+
+        // Set session context for notification functions
+        $_SESSION['user_id'] = $notification_data['user_id'];
+
+        // Trigger external notifications (email/SMS) if preferences allow
+        $alert_sent = sendBudgetAlert(
+            $notification_data['user_id'],
+            $notification_data['alert_type'],
+            $notification_data['budget_data']
+        );
+
+        if ($alert_sent) {
+            error_log("Budget notifications sent successfully for user " . $notification_data['user_id']);
+        } else {
+            error_log("Failed to send some budget notifications for user " . $notification_data['user_id']);
+        }
+
+    } catch (Exception $e) {
+        error_log("Error sending budget notifications: " . $e->getMessage());
+    } finally {
+        // Clean up background database connection
+        if (isset($GLOBALS['conn'])) {
+            $GLOBALS['conn']->close();
+            unset($GLOBALS['conn']);
+        }
     }
 }
 ?>
