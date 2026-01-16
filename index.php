@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="assets/css/index.css">
 </head>
+
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm">
         <div class="container">
@@ -39,19 +41,19 @@
                 <div class="col-12 col-md-6">
                     <h1 class="display-4 fw-bold text-primary mb-4">Smart Energy Management for a Sustainable Future</h1>
                     <p class="fs-5 text-secondary mb-4" style="max-width: 600px;">
-                        Track your electricity consumption, get personalized recommendations, 
+                        Track your electricity consumption, get personalized recommendations,
                         and contribute to a greener planet with Electripid.
                     </p>
                     <div class="d-flex gap-3">
-                        <a href="user/register.php" class="btn btn-hero text-white">
+                        <a href="user/register.php" class="btn text-white fw-semibold shadow-sm" style="background-color: #00c853;">
                             <i class="bi bi-rocket-takeoff me-2"></i> Get Started Free
                         </a>
-                        <a href="#features" class="btn btn-outline-primary">
-                            <i class="bi bi-info-circle me-2"></i> Learn More
-                        </a>
-                    </div>
+                    <a href="#features" class="btn btn-outline-primary">
+                        <i class="bi bi-info-circle me-2"></i> Learn More
+                    </a>
                 </div>
             </div>
+        </div>
         </div>
     </section>
 
@@ -129,26 +131,16 @@
         </div>
     </section>
 
-    <section class="stats-section text-white py-5">
+    <section class="stats-section text-white pt-4 pb-2">
         <div class="container">
-            <div class="row text-center">
-                <div class="col-md-3 col-6 mb-4">
-                    <div class="display-6 fw-bold mb-2">1250+</div>
-                    <div class="fs-5 opacity-75">Active Users</div>
-                </div>
-                <div class="col-md-3 col-6 mb-4">
-                    <div class="display-6 fw-bold mb-2">8900+</div>
-                    <div class="fs-5 opacity-75">Appliances Tracked</div>
-                </div>
-                <div class="col-md-3 col-6 mb-4">
-                    <div class="display-6 fw-bold mb-2">150+</div>
-                    <div class="fs-5 opacity-75">Energy Tips</div>
-                </div>
-                <div class="col-md-3 col-6 mb-4">
-                    <div class="display-6 fw-bold mb-2">₱25,000+</div>
-                    <div class="fs-5 opacity-75">Raised for Green Energy</div>
+            <!-- Centered Tagline -->
+            <div class="row">
+                <div class="col-12 text-center mb-4">
+                    <h2 class="display-6 fw-bold mb-4">Smart Energy Management for a Sustainable Future</h2>
+                    <p class="fs-5 opacity-75">We help you track, optimize, and reduce your electricity consumption.</p>
                 </div>
             </div>
+        </div>
         </div>
     </section>
 
@@ -223,7 +215,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
+            anchor.addEventListener('click', function(e) {
                 e.preventDefault();
                 const target = document.querySelector(this.getAttribute('href'));
                 if (target) {
@@ -249,7 +241,7 @@
         window.addEventListener('scroll', function() {
             const sections = document.querySelectorAll('section[id]');
             const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
-            
+
             let current = '';
             sections.forEach(section => {
                 const sectionTop = section.offsetTop;
@@ -258,7 +250,7 @@
                     current = section.getAttribute('id');
                 }
             });
-            
+
             navLinks.forEach(link => {
                 link.classList.remove('active');
                 if (link.getAttribute('href') === `#${current}`) {
@@ -268,4 +260,5 @@
         });
     </script>
 </body>
+
 </html>

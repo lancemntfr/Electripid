@@ -68,7 +68,7 @@
 }
 
 .stats-section {
-    background: linear-gradient(135deg, var(--dark-blue), #1565c0);
+    background: linear-gradient(135deg, var(--primary-blue));
 }
 
 .step-number {
@@ -82,7 +82,7 @@
 }
 
 .footer {
-    background: var(--dark-blue);
+    background: linear-gradient(135deg, var(--primary-blue));
 }
 
 .footer-links {
