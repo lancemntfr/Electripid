@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../connect.php';
+require_once 'verification/email/phpmailer.php';
 
 $error_message = '';
 $success_message = '';
@@ -34,23 +35,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error_message = 'Your account is ' . $user['acc_status'] . '. Please contact support.';
             } else {
                 if (password_verify($password, $user['password'])) {
-                    $_SESSION['user_id'] = $user['user_id'];
-                    $_SESSION['fname'] = $user['fname'];
-                    $_SESSION['lname'] = $user['lname'];
-                    $_SESSION['email'] = $user['email'];
-                    $_SESSION['role'] = $user['role'];
-                    
-                    if ($remember) {
-                        setcookie('remember_token', base64_encode($user['user_id'] . ':' . hash('sha256', $user['password'])), time() + (30 * 24 * 60 * 60), '/');
-                    }
-                    
-                    // Redirect based on role
-                    if ($user['role'] === 'admin') {
-                        header('Location: ../admin/dashboard.php');
+                    // Check if email is verified
+                    $email_verification_check = $conn->prepare("SELECT verification_id FROM VERIFICATION WHERE user_id = ? AND verification_type = 'email' AND is_verified = 1 LIMIT 1");
+                    $email_verification_check->bind_param("i", $user['user_id']);
+                    $email_verification_check->execute();
+                    $email_verification_result = $email_verification_check->get_result();
+
+                    if ($email_verification_result->num_rows === 0) {
+                        // Email not verified - send verification email and redirect
+                        $code = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+                        $expires_at = date("Y-m-d H:i:s", strtotime("+15 minutes"));
+
+                        // Insert or update verification record
+                        $insert_stmt = $conn->prepare("INSERT INTO VERIFICATION (user_id, verification_type, verification_code, expires_at, is_verified) VALUES (?, 'email', ?, ?, 0) ON DUPLICATE KEY UPDATE verification_code = VALUES(verification_code), expires_at = VALUES(expires_at)");
+                        $insert_stmt->bind_param("iss", $user['user_id'], $code, $expires_at);
+                        $insert_stmt->execute();
+
+                        // Send verification email
+                        $type = 'verification';
+                        $email_sent = sendVerificationEmail($user['email'], $code, $type);
+
+                        if ($email_sent) {
+                            // Store verification info in session
+                            $_SESSION['email_verification'] = [
+                                'user_id' => $user['user_id'],
+                                'email' => $user['email'],
+                                'verification_code' => $code,
+                                'expires_at' => $expires_at
+                            ];
+
+                            // Redirect to verification page with message
+                            header('Location: verification/email/verify_email.php?message=verify_email');
+                            exit;
+                        } else {
+                            $error_message = 'Unable to send verification email. Please try again later.';
+                        }
                     } else {
-                        header('Location: dashboard.php');
+                        // Email verified - proceed with login
+                        $_SESSION['user_id'] = $user['user_id'];
+                        $_SESSION['fname'] = $user['fname'];
+                        $_SESSION['lname'] = $user['lname'];
+                        $_SESSION['email'] = $user['email'];
+                        $_SESSION['role'] = $user['role'];
+
+                        if ($remember) {
+                            setcookie('remember_token', base64_encode($user['user_id'] . ':' . hash('sha256', $user['password'])), time() + (30 * 24 * 60 * 60), '/');
+                        }
+
+                        // Redirect based on role
+                        if ($user['role'] === 'admin') {
+                            header('Location: ../admin/dashboard.php');
+                        } else {
+                            header('Location: dashboard.php');
+                        }
+                        exit;
                     }
-                    exit;
                 } else {
                     $error_message = 'Invalid email or password.';
                 }
@@ -78,19 +117,58 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
             $user = mysqli_fetch_assoc($result);
 
             if (hash('sha256', $user['password']) === $token_hash) {
-                $_SESSION['user_id'] = $user['user_id'];
-                $_SESSION['fname'] = $user['fname'];
-                $_SESSION['lname'] = $user['lname'];
-                $_SESSION['email'] = $user['email'];
-                $_SESSION['role'] = $user['role'];
-                
-                // Redirect based on role
-                if ($user['role'] === 'admin') {
-                    header('Location: ../admin/dashboard.php');
+                // Check if email is verified
+                $email_verification_check = $conn->prepare("SELECT verification_id FROM VERIFICATION WHERE user_id = ? AND verification_type = 'email' AND is_verified = 1 LIMIT 1");
+                $email_verification_check->bind_param("i", $user['user_id']);
+                $email_verification_check->execute();
+                $email_verification_result = $email_verification_check->get_result();
+
+                if ($email_verification_result->num_rows === 0) {
+                    // Email not verified - send verification email and redirect
+                    $code = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+                    $expires_at = date("Y-m-d H:i:s", strtotime("+15 minutes"));
+
+                    // Insert or update verification record
+                    $insert_stmt = $conn->prepare("INSERT INTO VERIFICATION (user_id, verification_type, verification_code, expires_at, is_verified) VALUES (?, 'email', ?, ?, 0) ON DUPLICATE KEY UPDATE verification_code = VALUES(verification_code), expires_at = VALUES(expires_at)");
+                    $insert_stmt->bind_param("iss", $user['user_id'], $code, $expires_at);
+                    $insert_stmt->execute();
+
+                    // Send verification email
+                    $type = 'verification';
+                    $email_sent = sendVerificationEmail($user['email'], $code, $type);
+
+                    if ($email_sent) {
+                        // Store verification info in session
+                        $_SESSION['email_verification'] = [
+                            'user_id' => $user['user_id'],
+                            'email' => $user['email'],
+                            'verification_code' => $code,
+                            'expires_at' => $expires_at
+                        ];
+
+                        // Redirect to verification page with message
+                        header('Location: verification/email/verify_email.php?message=verify_email');
+                        exit;
+                    } else {
+                        // If email sending fails, just continue without auto-login (cookie will be cleared)
+                        setcookie('remember_token', '', time() - 3600, '/');
+                    }
                 } else {
-                    header('Location: dashboard.php');
+                    // Email verified - proceed with login
+                    $_SESSION['user_id'] = $user['user_id'];
+                    $_SESSION['fname'] = $user['fname'];
+                    $_SESSION['lname'] = $user['lname'];
+                    $_SESSION['email'] = $user['email'];
+                    $_SESSION['role'] = $user['role'];
+
+                    // Redirect based on role
+                    if ($user['role'] === 'admin') {
+                        header('Location: ../admin/dashboard.php');
+                    } else {
+                        header('Location: dashboard.php');
+                    }
+                    exit;
                 }
-                exit;
             }
         }
         
@@ -365,6 +443,8 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
                 successMessage = 'You have successfully changed your password.';
             } else if (params.get('verified') === '1') {
                 successMessage = 'You have successfully created your Electripid account.';
+            } else if (params.get('login_verified') === '1') {
+                successMessage = 'Your email has been verified successfully. You can now log in.';
             }
 
             if (successMessage) {

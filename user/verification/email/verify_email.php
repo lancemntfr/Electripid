@@ -13,6 +13,11 @@
     $error = '';
     $success = '';
 
+    // Check for message from login redirect
+    if (isset($_GET['message']) && $_GET['message'] === 'verify_email') {
+        $success = 'Please verify your email to continue. A verification code has been sent to your email address.';
+    }
+
     $logDir = realpath(__DIR__ . '/../../../') . '/log';
     if (!is_dir($logDir)) mkdir($logDir, 0777, true);
 
@@ -141,8 +146,16 @@
                         }
 
                         if ($verification_success) {
+                            // Check if this verification came from login (email_verification session exists)
+                            // If so, redirect to login with success message, otherwise to settings
+                            $came_from_login = isset($_SESSION['email_verification']);
                             unset($_SESSION['email_verification']);
-                            header("Location: ../../settings.php?verified=1");
+
+                            if ($came_from_login) {
+                                header("Location: ../../login.php?login_verified=1");
+                            } else {
+                                header("Location: ../../settings.php?verified=1");
+                            }
                             exit;
                         }
                     } else {
