@@ -100,17 +100,20 @@ if ($household_result && $household_result->num_rows > 0) {
         <div class="position-relative me-3">
           <button class="nav-icon-btn position-relative" type="button" style="font-size: 2rem;" id="bellNotificationBtn" onclick="toggleBudgetNotification()">
             <i class="bi bi-bell"></i>
-            <span class="budget-notification-badge" id="budgetNotificationBadge" style="display: none;">1</span>
+            <span class="budget-notification-badge" id="budgetNotificationBadge" style="display: none;"></span>
           </button>
           <!-- Budget Notification Message Box -->
           <div class="budget-notification-box" id="budgetNotificationBox">
             <div class="notification-header">
               <div class="notification-icon">
-                <i class="bi bi-exclamation-triangle-fill"></i>
+                <i class="bi bi-exclamation-triangle-fill" id="notificationIcon"></i>
               </div>
-              <h6 class="notification-title">Budget Alert</h6>
+              <h6 class="notification-title" id="notificationTitle">Budget Alert</h6>
             </div>
-            <p class="notification-message">You are over budget. This might affect your monthly spending. Consider reducing appliance usage or adjusting your budget in Settings.</p>
+            <p class="notification-message" id="notificationMessage">Loading notification...</p>
+            <div class="notification-actions mt-2">
+              <button class="btn btn-sm btn-outline-primary" onclick="toggleBudgetNotification()">Dismiss</button>
+            </div>
           </div>
         </div>
         <div class="dropdown ms-2">
@@ -603,12 +606,12 @@ if ($household_result && $household_result->num_rows > 0) {
   background-color: #dc3545;
   color: white;
   border-radius: 50%;
-  width: 18px;
-  height: 18px;
+  width: 10px;
+  height: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.65rem;
+  font-size: 0.3rem;
   font-weight: bold;
   border: 2px solid white;
   z-index: 10;
@@ -735,51 +738,84 @@ if ($household_result && $household_result->num_rows > 0) {
     async function toggleBudgetNotification() {
       const notificationBox = document.getElementById('budgetNotificationBox');
       const notificationBadge = document.getElementById('budgetNotificationBadge');
-      
-      if (notificationBox && notificationBadge) {
-        if (notificationBox.classList.contains('show')) {
-          // Hide message box
-          notificationBox.classList.remove('show');
-        } else {
-          // Show message box and hide badge immediately
-          if (notificationBadge.style.display !== 'none') {
-            notificationBox.classList.add('show');
+
+      if (!notificationBox || !notificationBadge) return;
+
+      if (notificationBox.classList.contains('show')) {
+        // Hide message box
+        notificationBox.classList.remove('show');
+        return;
+      }
+
+      // Load and display notification content
+      try {
+        const response = await fetch('api/check_budget_notification.php');
+        const result = await response.json();
+
+        if (result.success && result.has_unread && result.notification) {
+          updateNotificationDisplay(result.notification);
+          notificationBox.classList.add('show');
+
+          // Mark as read after showing
+          const markResponse = await fetch('api/mark_notification_read.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ notification_type: 'budget' })
+          });
+
+          const markResult = await markResponse.json();
+          if (markResult.success) {
             notificationBadge.style.display = 'none';
-            
-            // Mark notification as read in database
-            try {
-              await fetch('api/mark_notification_read.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  notification_type: 'budget'
-                })
-              });
-            } catch (error) {
-              console.error('Error marking notification as read:', error);
-            }
+            hasUnreadNotification = false;
           }
+        } else {
+          // No unread notifications
+          updateNotificationDisplay({
+            title: 'No New Notifications',
+            message: 'You have no unread budget notifications at this time.'
+          });
+          notificationBadge.style.display = 'none';
+          hasUnreadNotification = false;
+        }
+      } catch (error) {
+        console.error('Error in notification toggle:', error);
+        updateNotificationDisplay({
+          title: 'Error',
+          message: 'Unable to load notification content.'
+        });
+      }
+    }
+
+    function updateNotificationDisplay(notification) {
+      const titleEl = document.getElementById('notificationTitle');
+      const messageEl = document.getElementById('notificationMessage');
+      const iconEl = document.getElementById('notificationIcon');
+
+      if (titleEl) titleEl.textContent = notification.title || 'Notification';
+      if (messageEl) messageEl.textContent = notification.message || 'No message available';
+
+      // Update icon based on notification type
+      if (iconEl) {
+        if (notification.title && notification.title.includes('Alert')) {
+          iconEl.className = 'bi bi-exclamation-triangle-fill text-danger';
+        } else if (notification.title && notification.title.includes('Warning')) {
+          iconEl.className = 'bi bi-exclamation-triangle text-warning';
+        } else {
+          iconEl.className = 'bi bi-info-circle text-info';
         }
       }
     }
 
+    // Global variable to track current notification state
+    let hasUnreadNotification = false;
+
     document.addEventListener('DOMContentLoaded', async function() {
-      // Check database for unread notifications first
-      try {
-        const response = await fetch('api/check_budget_notification.php');
-        const result = await response.json();
-        
-        if (result.success && !result.has_unread) {
-          // If no unread notification, hide badge
-          const notificationBadge = document.getElementById('budgetNotificationBadge');
-          if (notificationBadge) {
-            notificationBadge.style.display = 'none';
-          }
-        }
-      } catch (error) {
-        console.error('Error checking notifications:', error);
-      }
-      
+      // Check database for unread notifications first and update badge
+      await checkForNotifications();
+
+      // Set up periodic notification checking (every 60 seconds to reduce server load)
+      setInterval(checkForNotifications, 60000);
+
       updateAllMetrics();
       initForecastChart();
       loadAppliances();
@@ -789,6 +825,49 @@ if ($household_result && $household_result->num_rows > 0) {
         fetchWeather(currentLocation);
       }
     });
+
+    async function checkForNotifications() {
+      try {
+        // Use a single optimized API call to get both notification status and count
+        const [checkResponse, countResponse] = await Promise.all([
+          fetch('api/check_budget_notification.php'),
+          fetch('api/get_notification_count.php')
+        ]);
+
+        const [checkResult, countResult] = await Promise.all([
+          checkResponse.json(),
+          countResponse.json()
+        ]);
+
+        const notificationBadge = document.getElementById('budgetNotificationBadge');
+
+        if (checkResult.success && countResult.success) {
+          const currentlyHasUnread = checkResult.has_unread;
+          const unreadCount = countResult.unread_count;
+
+          // Only update DOM if state actually changed
+          if (currentlyHasUnread !== hasUnreadNotification) {
+            if (currentlyHasUnread && notificationBadge) {
+              notificationBadge.style.display = 'flex';
+              notificationBadge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+            } else if (notificationBadge) {
+              notificationBadge.style.display = 'none';
+            }
+            hasUnreadNotification = currentlyHasUnread;
+          } else if (currentlyHasUnread && notificationBadge && notificationBadge.style.display === 'flex') {
+            // Update count even if state didn't change
+            const currentCount = parseInt(notificationBadge.textContent) || 0;
+            if (currentCount !== unreadCount) {
+              notificationBadge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error checking notifications:', error);
+      }
+    }
+
+    // updateNotificationBadgeCount function removed - now integrated into checkForNotifications
   </script>
 
   <!-- Modular JavaScript Files -->

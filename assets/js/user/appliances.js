@@ -380,13 +380,23 @@ async function saveEditedAppliance() {
 
 // NEW FUNCTION: Delete appliance from Edit Modal
 async function deleteApplianceFromEdit() {
-  if (!currentEditingApplianceId) {
+  if (!currentEditingApplianceId || currentEditingApplianceId <= 0) {
+    console.error('No valid appliance selected for deletion');
+    alert('Please select an appliance to delete.');
     return;
   }
 
   // Open the delete confirmation modal
   const deleteModalEl = document.getElementById('deleteApplianceModal');
-  if (!deleteModalEl || typeof bootstrap === 'undefined') return;
+  if (!deleteModalEl) {
+    console.error('Delete modal not found');
+    return;
+  }
+
+  if (typeof bootstrap === 'undefined') {
+    console.error('Bootstrap not loaded');
+    return;
+  }
 
   let deleteModalInstance = bootstrap.Modal.getInstance(deleteModalEl);
   if (!deleteModalInstance) {
@@ -394,8 +404,8 @@ async function deleteApplianceFromEdit() {
   }
 
   // Set the appliance ID for deletion
-  deleteModalEl.setAttribute('data-appliance-id', currentEditingApplianceId);
-  
+  deleteModalEl.setAttribute('data-appliance-id', currentEditingApplianceId.toString());
+
   // Close the edit modal first
   if (editApplianceModalInstance) {
     editApplianceModalInstance.hide();
@@ -408,21 +418,45 @@ async function deleteApplianceFromEdit() {
 // Function to confirm deletion from the modal
 async function confirmDeleteAppliance() {
   const deleteModalEl = document.getElementById('deleteApplianceModal');
-  if (!deleteModalEl) return;
-  
+  if (!deleteModalEl) {
+    console.error('Delete modal not found');
+    return;
+  }
+
   const applianceId = deleteModalEl.getAttribute('data-appliance-id');
-  
-  if (!applianceId) return;
+  if (!applianceId) {
+    console.error('No appliance ID set for deletion');
+    return;
+  }
+
+  // Validate userId is available
+  if (typeof userId === 'undefined' || !userId) {
+    console.error('User ID not available');
+    alert('Session expired. Please refresh the page and try again.');
+    return;
+  }
+
+  // Show loading state on the delete button
+  const deleteButton = deleteModalEl.querySelector('.btn-danger');
+  const originalText = deleteButton ? deleteButton.innerHTML : '';
+  if (deleteButton) {
+    deleteButton.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Deleting...';
+    deleteButton.disabled = true;
+  }
 
   try {
     const response = await fetch('appliances/remove_appliance.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        appliance_id: Number(applianceId),
-        user_id: userId
+        appliance_id: parseInt(applianceId),
+        user_id: parseInt(userId)
       })
     });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
     const result = await response.json();
 
@@ -432,16 +466,27 @@ async function confirmDeleteAppliance() {
       if (deleteModalInstance) {
         deleteModalInstance.hide();
       }
-      
+
       // Reset current editing ID
       currentEditingApplianceId = null;
 
-      // Refresh the appliances list
-      await refreshAppliances();
+      // Small delay to ensure modal is fully closed before refreshing
+      setTimeout(async () => {
+        await refreshAppliances();
+        console.log('Appliance deleted successfully');
+      }, 300);
     } else {
       console.error('Error deleting appliance:', result.error);
+      alert('Failed to delete appliance: ' + (result.error || 'Unknown error'));
     }
   } catch (error) {
     console.error('Error deleting appliance:', error);
+    alert('An error occurred while deleting the appliance. Please try again.');
+  } finally {
+    // Restore button state
+    if (deleteButton) {
+      deleteButton.innerHTML = originalText;
+      deleteButton.disabled = false;
+    }
   }
 }
