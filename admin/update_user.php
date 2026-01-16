@@ -4,6 +4,7 @@ ob_start();
 session_start();
 
 require_once '../connect.php';
+require_once 'sync_helper.php';
 
 // Clear any output that might have been generated
 ob_clean();
@@ -100,7 +101,27 @@ $update_query = "UPDATE USER SET
     WHERE user_id = '$user_id_escaped'";
 
 if (executeQuery($update_query)) {
-    echo json_encode(['success' => true, 'message' => 'User updated successfully']);
+    // User updated successfully, now sync to external database
+    $sync_result = ['success' => true, 'message' => 'Sync not attempted'];
+
+    if (isSyncEnabled()) {
+        $sync_result = syncUserUpdate($user_id);
+
+        if ($sync_result['success']) {
+            $response_message = 'User updated and synced successfully';
+        } else {
+            $response_message = 'User updated successfully, but sync failed: ' . $sync_result['message'];
+            // Still return success since the main operation succeeded
+        }
+    } else {
+        $response_message = 'User updated successfully (sync disabled)';
+    }
+
+    echo json_encode([
+        'success' => true,
+        'message' => $response_message,
+        'sync_result' => $sync_result
+    ]);
 } else {
     $error_message = mysqli_error($conn);
     echo json_encode(['success' => false, 'error' => 'Failed to update user: ' . $error_message]);

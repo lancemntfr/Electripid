@@ -1,8 +1,13 @@
 <?php
 require_once 'admin_auth.php';
 require_once '../connect.php';
+require_once 'sync_helper.php';
 
 $page = $_GET['page'] ?? 'users';
+
+// Check sync status
+$sync_enabled = isSyncEnabled();
+$sync_status_message = $sync_enabled ? 'Active' : 'Disabled';
 
 /* ================= USERS DATA ================= */
 if ($page === 'users') {
@@ -22,7 +27,6 @@ if ($page === 'users') {
     ");
 }
 
-/* ================= DONATIONS DATA ================= */
 if ($page === 'donations') {
 
     $totalDonation = mysqli_fetch_assoc(executeQuery(
@@ -311,11 +315,49 @@ body {
     transition: all 0.3s ease;
 }
 
-
 .badge-role-user {
     background: #1E88E5 !important;
     color: white;
     transition: all 0.3s ease;
+}
+
+/* Sync Status Styles */
+.badge-sync-active {
+    background: linear-gradient(135deg, #17a2b8, #20c997) !important;
+    color: white;
+    border: 1px solid rgba(255,255,255,0.2);
+    box-shadow: 0 2px 4px rgba(23, 162, 184, 0.2);
+}
+
+.badge-sync-offline {
+    background: linear-gradient(135deg, #ffc107, #fd7e14) !important;
+    color: white;
+    border: 1px solid rgba(255,255,255,0.2);
+    box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2);
+}
+
+/* Sync Animation */
+@keyframes syncPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.sync-active {
+    animation: syncPulse 2s ease-in-out infinite;
+}
+
+/* Enhanced Alert Styles for Sync */
+.alert-sync-success {
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.alert-sync-warning {
+    background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+    border: 1px solid #ffeaa7;
+    color: #856404;
 }
 
 
@@ -698,17 +740,26 @@ body {
     <div class="d-flex align-items-center">
       <!-- Navigation Links -->
       <a href="?page=users"
-         class="nav-icon-btn position-relative me-3 <?= $page==='users'?'active':'' ?>" 
+         class="nav-icon-btn position-relative me-3 <?= $page==='users'?'active':'' ?>"
          title="Users"
          style="font-size: 2rem;">
         <i class="bi bi-people"></i>
       </a>
       <a href="?page=donations"
-         class="nav-icon-btn position-relative me-3 <?= $page==='donations'?'active':'' ?>" 
+         class="nav-icon-btn position-relative me-3 <?= $page==='donations'?'active':'' ?>"
          title="Donations"
          style="font-size: 2rem;">
         <i class="bi bi-cash-coin"></i>
       </a>
+
+      <!-- Sync Status Indicator -->
+      <div class="me-3">
+        <span class="badge <?= $sync_enabled ? 'badge-sync-active sync-active' : 'badge-sync-offline' ?>"
+              title="Database Synchronization: <?= $sync_enabled ? 'Active' : 'Disabled' ?>">
+          <i class="bi bi-<?= $sync_enabled ? 'arrow-repeat' : 'dash-circle' ?> me-1"></i>
+          <small>Sync</small>
+        </span>
+      </div>
       
       <!-- User Profile Dropdown -->
       <div class="dropdown ms-2">
@@ -747,7 +798,7 @@ body {
 <!-- ================= USERS VIEW ================= -->
 
 <div class="row g-3 mb-4">
-  <div class="col-lg-6 col-md-6">
+  <div class="col-lg-4 col-md-6">
     <div class="card h-100 border-0 shadow-sm">
       <div class="card-body p-3">
         <div class="d-flex align-items-center mb-2">
@@ -762,7 +813,7 @@ body {
       </div>
     </div>
   </div>
-  <div class="col-lg-6 col-md-6">
+  <div class="col-lg-4 col-md-6">
     <div class="card h-100 border-0 shadow-sm">
       <div class="card-body p-3">
         <div class="d-flex align-items-center mb-2">
@@ -772,6 +823,24 @@ body {
           <div>
             <h6 class="text-muted mb-1 small">Active Users</h6>
             <h4 class="mb-0 fw-bold"><?= $activeUsers ?></h4>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4 col-md-6">
+    <div class="card h-100 border-0 shadow-sm">
+      <div class="card-body p-3">
+        <div class="d-flex align-items-center mb-2">
+          <div class="rounded-3 p-2 me-3" style="background: rgba(<?= $sync_enabled ? '16, 185, 129' : '220, 53, 69' ?>, 0.1);">
+            <i class="bi bi-arrow-repeat text-<?= $sync_enabled ? 'success' : 'danger' ?> fs-4"></i>
+          </div>
+          <div>
+            <h6 class="text-muted mb-1 small">Sync Status</h6>
+            <h4 class="mb-0 fw-bold text-<?= $sync_enabled ? 'success' : 'danger' ?>">
+              <i class="bi bi-<?= $sync_enabled ? 'check-circle-fill' : 'x-circle-fill' ?> me-1"></i>
+              <?= $sync_status_message ?>
+            </h4>
           </div>
         </div>
       </div>
@@ -799,6 +868,7 @@ body {
           <th class="text-center">City</th>
           <th class="text-center">Contact</th>
           <th class="text-center">Status</th>
+          <th class="text-center">Sync</th>
           <th class="text-center">Registered</th>
           <th class="text-center">Actions</th>
         </tr>
@@ -835,6 +905,19 @@ body {
               <i class="bi bi-<?= $u['acc_status']=='active'?'check-circle':'x-circle' ?>"></i>
               <?= ucfirst($u['acc_status']) ?>
             </span>
+          </td>
+          <td class="text-center">
+            <?php if ($sync_enabled): ?>
+              <span class="badge badge-sync-active sync-active" title="Sync enabled - Changes will be synchronized">
+                <i class="bi bi-arrow-repeat me-1"></i>
+                <small>Active</small>
+              </span>
+            <?php else: ?>
+              <span class="badge badge-sync-offline" title="Sync disabled - Changes will not be synchronized">
+                <i class="bi bi-dash-circle me-1"></i>
+                <small>Offline</small>
+              </span>
+            <?php endif; ?>
           </td>
           <td class="text-center"><small><?= date('M d, Y', strtotime($u['created_at'])) ?></small></td>
           <td class="text-center">
@@ -1167,12 +1250,23 @@ document.addEventListener('DOMContentLoaded', function() {
       const result = await response.json();
       
       if (result.success) {
-        alertDiv.innerHTML = '<div class="alert alert-success">User updated successfully!</div>';
+        let alertClass = 'alert-success';
+        let alertIcon = 'check-circle';
+        let alertMessage = result.message;
+
+        // Check sync result if available
+        if (result.sync_result && !result.sync_result.success) {
+          alertClass = 'alert-warning';
+          alertIcon = 'exclamation-triangle';
+          alertMessage += '<br><small class="text-muted">⚠️ Sync Warning: ' + result.sync_result.message + '</small>';
+        }
+
+        alertDiv.innerHTML = `<div class="alert ${alertClass}"><i class="bi bi-${alertIcon} me-2"></i>${alertMessage}</div>`;
         setTimeout(() => {
           location.reload();
-        }, 1000);
+        }, 1500);
       } else {
-        alertDiv.innerHTML = `<div class="alert alert-danger">${result.error || 'Failed to update user.'}</div>`;
+        alertDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-x-circle me-2"></i>${result.error || 'Failed to update user.'}</div>`;
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
       }
@@ -1211,12 +1305,23 @@ document.addEventListener('DOMContentLoaded', function() {
       const result = await response.json();
       
       if (result.success) {
-        alertDiv.innerHTML = '<div class="alert alert-success">User deleted successfully!</div>';
+        let alertClass = 'alert-success';
+        let alertIcon = 'check-circle';
+        let alertMessage = result.message;
+
+        // Check sync result if available
+        if (result.sync_result && !result.sync_result.success) {
+          alertClass = 'alert-warning';
+          alertIcon = 'exclamation-triangle';
+          alertMessage += '<br><small class="text-muted">⚠️ Sync Warning: ' + result.sync_result.message + '</small>';
+        }
+
+        alertDiv.innerHTML = `<div class="alert ${alertClass}"><i class="bi bi-${alertIcon} me-2"></i>${alertMessage}</div>`;
         setTimeout(() => {
           location.reload();
-        }, 1000);
+        }, 1500);
       } else {
-        alertDiv.innerHTML = `<div class="alert alert-danger">${result.error || 'Failed to delete user.'}</div>`;
+        alertDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-x-circle me-2"></i>${result.error || 'Failed to delete user.'}</div>`;
         deleteBtn.disabled = false;
         deleteBtn.innerHTML = originalText;
       }
