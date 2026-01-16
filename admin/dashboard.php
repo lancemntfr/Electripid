@@ -5,11 +5,6 @@ require_once 'sync_helper.php';
 
 $page = $_GET['page'] ?? 'users';
 
-// Check sync status
-$sync_enabled = isSyncEnabled();
-$sync_status_message = $sync_enabled ? 'Active' : 'Disabled';
-
-/* ================= USERS DATA ================= */
 if ($page === 'users') {
 
     $totalUsers = mysqli_fetch_assoc(executeQuery(
@@ -42,8 +37,9 @@ if ($page === 'donations') {
     ))['total'];
 
     $donations = executeQuery("
-        SELECT 
+        SELECT
             d.donation_id,
+            d.reference,
             CONCAT(u.fname,' ',u.lname) AS donor_name,
             d.amount,
             d.donation_date
@@ -79,14 +75,13 @@ body {
     background: linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     min-height: 100vh;
-    padding-bottom: 2rem;
+    overflow-y: auto;
 }
 
 .container {
     max-width: 1400px;
 }
 
-/* Navbar Styles - Match User Dashboard */
 .navbar {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     border-radius: 0 !important;
@@ -193,7 +188,8 @@ body {
     padding: 1.5rem;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     min-height: 260px;
-       display: flex;
+    max-height: 440px;
+    display: flex;
     flex-direction: column;
 }
 
@@ -210,39 +206,6 @@ body {
 /* Table Styles - Improved */
 .table {
     margin-bottom: 0;
-}
-
-/* Scrollable table container */
-
-
-.table-responsive-scrollable thead {
-    position: sticky;
-    top: 56px; 
-    z-index: 20;
-    background: #f8f9fa;
-}
-
-.table-responsive-scrollable {
-    max-height: 600px;
-    overflow-y: auto;
-}
-
-.table-responsive-scrollable::-webkit-scrollbar {
-    width: 8px;
-}
-
-.table-responsive-scrollable::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.05);
-    border-radius: 4px;
-}
-
-.table-responsive-scrollable::-webkit-scrollbar-thumb {
-    background: rgba(30, 136, 229, 0.5);
-    border-radius: 4px;
-}
-
-.table-responsive-scrollable::-webkit-scrollbar-thumb:hover {
-    background: rgba(30, 136, 229, 0.7);
 }
 
 .table thead {
@@ -729,7 +692,7 @@ body {
 </style>
 </head>
 
-<body>
+<body class="m-0 p-0">
 
 <!-- NAVBAR -->
 <nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm" style="border-radius: 0 !important;">
@@ -752,14 +715,6 @@ body {
         <i class="bi bi-cash-coin"></i>
       </a>
 
-      <!-- Sync Status Indicator -->
-      <div class="me-3">
-        <span class="badge <?= $sync_enabled ? 'badge-sync-active sync-active' : 'badge-sync-offline' ?>"
-              title="Database Synchronization: <?= $sync_enabled ? 'Active' : 'Disabled' ?>">
-          <i class="bi bi-<?= $sync_enabled ? 'arrow-repeat' : 'dash-circle' ?> me-1"></i>
-          <small>Sync</small>
-        </span>
-      </div>
       
       <!-- User Profile Dropdown -->
       <div class="dropdown ms-2">
@@ -792,13 +747,13 @@ body {
 </nav>
 
 
-<div class="container px-5 py-4 mt-4">
+<div class="container px-5 py-2 mt-4">
 
 <?php if ($page === 'users'): ?>
 <!-- ================= USERS VIEW ================= -->
 
 <div class="row g-3 mb-4">
-  <div class="col-lg-4 col-md-6">
+  <div class="col-6">
     <div class="card h-100 border-0 shadow-sm">
       <div class="card-body p-3">
         <div class="d-flex align-items-center mb-2">
@@ -813,7 +768,7 @@ body {
       </div>
     </div>
   </div>
-  <div class="col-lg-4 col-md-6">
+  <div class="col-6">
     <div class="card h-100 border-0 shadow-sm">
       <div class="card-body p-3">
         <div class="d-flex align-items-center mb-2">
@@ -823,24 +778,6 @@ body {
           <div>
             <h6 class="text-muted mb-1 small">Active Users</h6>
             <h4 class="mb-0 fw-bold"><?= $activeUsers ?></h4>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="col-lg-4 col-md-6">
-    <div class="card h-100 border-0 shadow-sm">
-      <div class="card-body p-3">
-        <div class="d-flex align-items-center mb-2">
-          <div class="rounded-3 p-2 me-3" style="background: rgba(<?= $sync_enabled ? '16, 185, 129' : '220, 53, 69' ?>, 0.1);">
-            <i class="bi bi-arrow-repeat text-<?= $sync_enabled ? 'success' : 'danger' ?> fs-4"></i>
-          </div>
-          <div>
-            <h6 class="text-muted mb-1 small">Sync Status</h6>
-            <h4 class="mb-0 fw-bold text-<?= $sync_enabled ? 'success' : 'danger' ?>">
-              <i class="bi bi-<?= $sync_enabled ? 'check-circle-fill' : 'x-circle-fill' ?> me-1"></i>
-              <?= $sync_status_message ?>
-            </h4>
           </div>
         </div>
       </div>
@@ -868,7 +805,6 @@ body {
           <th class="text-center">City</th>
           <th class="text-center">Contact</th>
           <th class="text-center">Status</th>
-          <th class="text-center">Sync</th>
           <th class="text-center">Registered</th>
           <th class="text-center">Actions</th>
         </tr>
@@ -905,19 +841,6 @@ body {
               <i class="bi bi-<?= $u['acc_status']=='active'?'check-circle':'x-circle' ?>"></i>
               <?= ucfirst($u['acc_status']) ?>
             </span>
-          </td>
-          <td class="text-center">
-            <?php if ($sync_enabled): ?>
-              <span class="badge badge-sync-active sync-active" title="Sync enabled - Changes will be synchronized">
-                <i class="bi bi-arrow-repeat me-1"></i>
-                <small>Active</small>
-              </span>
-            <?php else: ?>
-              <span class="badge badge-sync-offline" title="Sync disabled - Changes will not be synchronized">
-                <i class="bi bi-dash-circle me-1"></i>
-                <small>Offline</small>
-              </span>
-            <?php endif; ?>
           </td>
           <td class="text-center"><small><?= date('M d, Y', strtotime($u['created_at'])) ?></small></td>
           <td class="text-center">
@@ -1010,7 +933,7 @@ body {
 
       <?php while($d=mysqli_fetch_assoc($donations)): ?>
         <tr>
-          <td class="text-center"><strong>#<?= $d['donation_id'] ?></strong></td>
+          <td class="text-center"><strong>#<?= htmlspecialchars($d['reference'] ?: $d['donation_id']) ?></strong></td>
           <td class="text-center">
             <i class="bi bi-person-circle me-2 text-primary"></i>
             <?= htmlspecialchars($d['donor_name']) ?>

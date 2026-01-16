@@ -6,7 +6,6 @@ require_once 'verification/email/phpmailer.php';
 $error_message = '';
 $success_message = '';
 
-// Check if already logged in and redirect based on role
 if (isset($_SESSION['user_id'])) {
     if ($_SESSION['role'] === 'admin') {
         header('Location: ../admin/dashboard.php');
